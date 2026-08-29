@@ -33,7 +33,7 @@ function EducatorHome({ navigate, user }) {
 
   return (
     <div>
-      <PageHeader title={`Bonjour, ${user?.name?.split(" ")[0]} 👋`} subtitle="Voici un aperçu de votre activité." />
+      <PageHeader title={`Bonjour, ${user?.name?.split(" ")[0]} 👋`} subtitle="Voici un aperçu de votre activité." action={<Button data-testid="edit-profile-cta" onClick={() => navigate("/dashboard/profil")} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><FileText size={16} /> Modifier mon profil</Button>} />
       {!prof && <EmptyState icon={FileText} title="Complétez votre profil éducateur" description="Créez votre profil pour être visible et recevoir des demandes." action={<Button data-testid="create-profile-cta" onClick={() => navigate("/dashboard/profil")} className="rounded-xl bg-askool-blue text-white">Créer mon profil</Button>} />}
       {prof && (
         <>
