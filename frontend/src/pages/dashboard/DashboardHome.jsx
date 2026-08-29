@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, FileText, Inbox, Calendar, Star, TrendingUp, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search } from "lucide-react";
-import { StatCard, PageHeader, Loader, EmptyState } from "@/components/common";
+import { StatCard, PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
@@ -27,28 +26,15 @@ function EducatorHome({ navigate, user }) {
     api.get("/applications/mine").then(({ data }) => setApps(data.results)).catch(() => {});
     api.get("/bookings/mine").then(({ data }) => setBookings(data.results)).catch(() => {});
   }, []);
-  const fields = prof ? ["profession", "bio", "region", "subjects", "levels", "hourly_rate", "photo", "diplomas"] : [];
-  const filled = prof ? fields.filter((f) => { const v = prof[f]; return Array.isArray(v) ? v.length : v; }).length : 0;
-  const pct = prof ? Math.round((filled / fields.length) * 100) : 0;
-
   return (
     <div>
       <PageHeader title={`Bonjour, ${user?.name?.split(" ")[0]} 👋`} subtitle="Voici un aperçu de votre activité." action={<Button data-testid="edit-profile-cta" onClick={() => navigate("/dashboard/profil")} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><FileText size={16} /> Modifier mon profil</Button>} />
-      {!prof && <EmptyState icon={FileText} title="Complétez votre profil éducateur" description="Créez votre profil pour être visible et recevoir des demandes." action={<Button data-testid="create-profile-cta" onClick={() => navigate("/dashboard/profil")} className="rounded-xl bg-askool-blue text-white">Créer mon profil</Button>} />}
-      {prof && (
-        <>
-          <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between"><span className="font-display font-semibold text-gray-900">Profil complété à {pct}%</span>{prof.is_verified ? <span className="flex items-center gap-1 text-sm text-emerald-600"><ShieldCheck size={16} /> Vérifié</span> : <Button size="sm" variant="ghost" onClick={() => navigate("/dashboard/profil")} className="text-askool-blue">Compléter</Button>}</div>
-            <Progress value={pct} className="mt-3 h-2" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard icon={Eye} label="Vues du profil" value={prof.views || 0} testId="stat-views" />
-            <StatCard icon={FileText} label="Candidatures envoyées" value={apps.length} accent="orange" testId="stat-apps" />
-            <StatCard icon={Calendar} label="Cours à venir" value={bookings.filter((b) => b.status !== "Terminé").length} accent="green" testId="stat-bookings" />
-            <StatCard icon={Star} label="Note moyenne" value={prof.rating || 0} testId="stat-rating" />
-          </div>
-        </>
-      )}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard icon={Eye} label="Vues du profil" value={prof?.views || 0} testId="stat-views" />
+        <StatCard icon={FileText} label="Candidatures envoyées" value={apps.length} accent="orange" testId="stat-apps" />
+        <StatCard icon={Calendar} label="Cours à venir" value={bookings.filter((b) => b.status !== "Terminé").length} accent="green" testId="stat-bookings" />
+        <StatCard icon={Star} label="Note moyenne" value={prof?.rating || 0} testId="stat-rating" />
+      </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
         <ActionCard icon={Search} title="Trouver un emploi" onClick={() => navigate("/emplois")} />
         <ActionCard icon={FileText} title="Mes candidatures" onClick={() => navigate("/dashboard/candidatures")} />
