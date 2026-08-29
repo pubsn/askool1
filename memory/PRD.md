@@ -60,6 +60,14 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Cron rappels de cours : `POST /api/cron/lesson-reminders` (auth Bearer WEBHOOK_CRON_SECRET, 401 sinon) + `/app/.emergent/crons.yml` (09h Dakar, notifie parent + éducateur la veille)
 - Vérifié iteration_6 : backend 6/6 pytest + flux frontend abonnement & réservation OK
 
+## Implemented (2026-06, itération 6 — Reçus de paiement)
+- Génération PDF du reçu (reportlab) : `GET /api/payments/{id}/receipt` (auth + propriété, PDF téléchargeable)
+- Reçu envoyé par email après confirmation (`send_payment_receipt_email`, HTML + lien de téléchargement ; le proxy email ne supporte pas les pièces jointes)
+- Étape « Paiement confirmé ! » dans `PaymentDialog` avec bouton « Télécharger le reçu (PDF) »
+- Nouvelle page « Mes paiements » (`/dashboard/paiements`) : historique + reçus téléchargeables (nav éducateur/école/parent/apprenant)
+- Vérifié : PDF valide (%PDF-, 200 application/pdf), 6/6 pytest, flux frontend pay→confirmé→téléchargement OK
+- Note : les emails vers les comptes démo `@askool.sn` renvoient 422 (adresses non délivrables, bloquées par le proxy) — comportement attendu, les vraies adresses reçoivent bien l'email (202)
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

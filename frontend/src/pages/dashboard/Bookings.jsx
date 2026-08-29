@@ -72,7 +72,7 @@ export default function Bookings() {
         onOpenChange={(v) => { if (!v) setPayBooking(null); }}
         payload={payBooking ? { purpose: "booking", booking_id: payBooking.booking_id, label: `Cours avec ${payBooking.educator_name}` } : null}
         amountLabel={payBooking ? `${(payBooking.price || 0).toLocaleString()} FCFA` : null}
-        onSuccess={() => { setPayBooking(null); load(); }}
+        onSuccess={() => { load(); }}
       />
     </div>
   );

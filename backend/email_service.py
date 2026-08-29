@@ -73,3 +73,34 @@ async def send_verification_email(to_email: str, token: str, name: str = "") -> 
         f'<p>Ce lien expire dans 24 heures.</p>'
     )
     return await _send(to_email, "Confirmez votre adresse email ASKOOL", _wrap(inner))
+
+
+async def send_payment_receipt_email(to_email: str, name: str, pay: dict, receipts_url: str = "") -> bool:
+    if not to_email or not EMAIL_KEY or EMAIL_KEY.startswith("{"):
+        logger.warning("Receipt email skipped (not configured) for %s", to_email)
+        return False
+    amount = f"{int(pay.get('amount', 0)):,}".replace(",", " ")
+    currency = escape(str(pay.get("currency", "XOF")))
+    label = escape(str(pay.get("label", "Paiement")))
+    provider = escape(str(pay.get("provider", "Mobile Money")))
+    pid = escape(str(pay.get("payment_id", "")))
+    date = escape(str(pay.get("confirmed_at") or pay.get("created_at", "")))
+    row = lambda k, v: (f'<tr><td style="padding:6px 0;color:#666;font-size:14px">{k}</td>'
+                        f'<td style="padding:6px 0;text-align:right;font-weight:bold;color:#111827;font-size:14px">{v}</td></tr>')
+    btn = ""
+    if receipts_url.startswith("https://"):
+        btn = (f'<p style="margin:24px 0"><a href="{escape(receipts_url)}" '
+               f'style="background:#2a4898;color:#fff;text-decoration:none;padding:12px 24px;border-radius:12px;display:inline-block;font-weight:bold">Télécharger le reçu (PDF)</a></p>')
+    inner = (
+        f'<p>Bonjour{(" " + escape(name)) if name else ""},</p>'
+        f'<p>Merci ! Votre paiement a bien été confirmé. Voici votre reçu :</p>'
+        f'<table role="presentation" width="100%" style="border-collapse:collapse;margin-top:12px">'
+        f'{row("Reçu N°", pid)}{row("Date", date)}{row("Description", label)}'
+        f'{row("Moyen de paiement", provider)}'
+        f'<tr><td style="padding:12px 0 0;border-top:1px solid #eee;font-size:16px;font-weight:bold;color:#2a4898">Total payé</td>'
+        f'<td style="padding:12px 0 0;border-top:1px solid #eee;text-align:right;font-size:16px;font-weight:bold;color:#2a4898">{amount} {currency}</td></tr>'
+        f'</table>'
+        f'{btn}'
+        f'<p style="font-size:13px;color:#888">Vous pouvez retrouver et télécharger tous vos reçus depuis votre espace ASKOOL.</p>'
+    )
+    return await _send(to_email, f"Votre reçu ASKOOL — {label}", _wrap(inner))

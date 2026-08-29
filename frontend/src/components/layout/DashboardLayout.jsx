@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   LayoutDashboard, User, FileText, Calendar, Heart, MessageSquare, Star,
   CreditCard, Settings, PlusCircle, Briefcase, Users, Search, Building2,
-  Bell, LogOut, GraduationCap, ShieldCheck, Home,
+  Bell, LogOut, GraduationCap, ShieldCheck, Home, Receipt,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "@/components/layout/PublicLayout";
@@ -20,6 +20,7 @@ const MENUS = {
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
     { label: "Avis", to: "/dashboard/avis", icon: Star },
     { label: "Abonnement", to: "/dashboard/abonnement", icon: CreditCard },
+    { label: "Mes paiements", to: "/dashboard/paiements", icon: Receipt },
     { label: "Paramètres", to: "/dashboard/parametres", icon: Settings },
   ],
   SCHOOL: [
@@ -31,6 +32,7 @@ const MENUS = {
     { label: "CVthèque", to: "/dashboard/cvtheque", icon: Search },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
     { label: "Abonnement", to: "/dashboard/abonnement", icon: CreditCard },
+    { label: "Mes paiements", to: "/dashboard/paiements", icon: Receipt },
     { label: "Paramètres", to: "/dashboard/parametres", icon: Settings },
   ],
   PARENT: [
@@ -41,6 +43,7 @@ const MENUS = {
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
+    { label: "Mes paiements", to: "/dashboard/paiements", icon: Receipt },
     { label: "Paramètres", to: "/dashboard/parametres", icon: Settings },
   ],
   ADULT_LEARNER: [
@@ -50,6 +53,7 @@ const MENUS = {
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
+    { label: "Mes paiements", to: "/dashboard/paiements", icon: Receipt },
     { label: "Paramètres", to: "/dashboard/parametres", icon: Settings },
   ],
   ADMIN: [
