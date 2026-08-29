@@ -1,0 +1,31 @@
+{
+  "summary": "Iteration 3 — end-to-end frontend testing of the two new messaging/viewer features. Executed as parent@askool.sn and pubsn01@gmail.com. Reused an existing conversation with Awa Ndiaye (2 pre-existing convs). All UI flows worked: (1) normal text message sends (regression), (2) PNG attachment upload via paperclip → message renders with docviewer trigger and clicking opens the DocViewer overlay in-page showing the image with a working download link (docviewer-download) and close button (docviewer-close); no new browser tab opened, (3) PDF attachment upload → message renders as a file chip, clicking opens DocViewer overlay with iframe embed of the PDF (in-page), (4) Bloquer replaces the input area with the blocked-banner (input hidden, sending disabled) and unblocks correctly restores the input; conversation list shows a ban icon on the blocked conversation, (5) Signaler opens the report dialog, submitting a reason shows success toast 'Signalement transmis'. Admin flow: /dashboard/admin → Signalements tab lists open reports (2 open) and 'Marquer traité' (close-report-<id>) resolves one and it disappears (2 → 1). Vérifications tab shows pending verifications with document chips; clicking a doc opens the DocViewer overlay in-page (no new tab), close works. All assertions passed.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin Vérifications (from prior iteration)", "issues": ["Legacy verification records without file_id still render as empty gray pills — unchanged from iteration 2, LOW priority."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_uploads.py",
+    "/app/backend/tests/backend_test.py"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "DocViewer.jsx: cleanup revokes the object URL only when the effect re-runs; if the user navigates away while the modal is open, the URL may leak. Consider revoking on modal close as well (setOpen(false) branch).",
+    "Messages.jsx: send() catches errors but doesn't distinguish 403 (blocked) from other errors — the toast just shows backend detail; acceptable but could be more explicit.",
+    "Messages.jsx onFile: relies on <input accept='.pdf,image/*'> for client validation; backend already enforces category=attachment mime-check which is good, but consider showing a friendlier message when server rejects a mime.",
+    "Report dialog only requires reason.trim() – no minimum length; a single character passes. Consider min-length 5 on the client for better data quality.",
+    "Conversation list: ban icon appears only when is_blocked is true from server. When the CURRENT user blocks, we rely on loadConvs() to refresh – working in tests but relies on the server denormalizing is_blocked in /conversations correctly (verified visually)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only iteration)", "frontend": "100% (7/7 targeted flows)"},
+  "test_credentials": "parent@askool.sn / Askool2026! and pubsn01@gmail.com / Askool2026! — both working",
+  "seed_data_creation": "Sent test text message, PNG attachment and PDF attachment in conversation parent<->Awa Ndiaye; created one report signalement (resolved during admin flow); toggled block/unblock (final state: unblocked).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All new messaging (attachments/block/report) and DocViewer overlay flows verified end-to-end via Playwright. Login route is /connexion (NOT /login). Emergent Kubernetes ingress route to auth returns 401 on stale cookies — use context.clear_cookies() before re-login when switching accounts. Two pre-existing conversations for parent; ensure to unblock at the start of any flow that requires sending. Backend suite from iteration 2 (test_uploads.py 14/14 + backend_test.py 27/27) still valid and not re-run this iteration.",
+  "rca of the issue": "No issues found."
+}

@@ -2,10 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { PageHeader, Loader, EmptyState } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageSquare, Send } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, Send, Paperclip, MoreVertical, Ban, Flag, ShieldOff, FileText, Loader2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import SecureFile from "@/components/SecureFile";
+import DocViewer from "@/components/DocViewer";
 
 export default function Messages() {
   const { user } = useAuth();
@@ -13,17 +19,63 @@ export default function Messages() {
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
   const endRef = useRef(null);
+  const fileRef = useRef(null);
 
-  const loadConvs = () => api.get("/conversations").then(({ data }) => { setConvs(data.results); if (!active && data.results[0]) openConv(data.results[0]); }).catch(() => setConvs([]));
+  const loadConvs = async () => {
+    const { data } = await api.get("/conversations").catch(() => ({ data: { results: [] } }));
+    setConvs(data.results);
+    if (data.results[0] && !active) openConv(data.results[0]);
+  };
   useEffect(() => { loadConvs(); }, []);
-  const openConv = async (c) => { setActive(c); const { data } = await api.get(`/conversations/${c.conversation_id}/messages`); setMessages(data.results); };
+  const openConv = async (c) => {
+    const { data } = await api.get(`/conversations/${c.conversation_id}/messages`);
+    setActive({ ...c, ...(data.conversation || {}) });
+    setMessages(data.results);
+  };
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
-  const send = async () => {
-    if (!text.trim() || !active) return;
-    const { data } = await api.post("/messages", { recipient_user_id: active.other_user_id, content: text });
-    setMessages((m) => [...m, data.message]); setText("");
+  const blocked = active?.is_blocked;
+
+  const send = async (attachment_file_id) => {
+    if ((!text.trim() && !attachment_file_id) || !active) return;
+    try {
+      const { data } = await api.post("/messages", { recipient_user_id: active.other_user_id, content: text, attachment_file_id });
+      setMessages((m) => [...m, data.message]);
+      setText("");
+    } catch (e) { toast.error(e.response?.data?.detail || "Erreur d'envoi"); }
+  };
+
+  const onFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const { data } = await api.post("/uploads?category=attachment&visibility=private", fd, { headers: { "Content-Type": "multipart/form-data" } });
+      await send(data.file.file_id);
+    } catch (err) { toast.error(err.response?.data?.detail || "Échec de la pièce jointe"); }
+    finally { setUploading(false); if (fileRef.current) fileRef.current.value = ""; }
+  };
+
+  const toggleBlock = async () => {
+    const url = `/conversations/${active.conversation_id}/${blocked ? "unblock" : "block"}`;
+    const { data } = await api.post(url);
+    toast.success(blocked ? "Conversation débloquée" : "Conversation bloquée");
+    setActive((a) => ({ ...a, is_blocked: data.is_blocked, blocked_by_me: !blocked }));
+    loadConvs();
+  };
+
+  const submitReport = async () => {
+    try {
+      await api.post("/reports", { target_user_id: active.other_user_id, conversation_id: active.conversation_id, reason: reportReason });
+      toast.success("Signalement transmis à notre équipe");
+      setReportOpen(false); setReportReason("");
+    } catch { toast.error("Erreur"); }
   };
 
   if (convs === null) return <Loader />;
@@ -34,34 +86,82 @@ export default function Messages() {
         <EmptyState icon={MessageSquare} title="Aucune conversation" description="Contactez un éducateur ou une école pour démarrer une conversation." />
       ) : (
         <div className="grid h-[600px] grid-cols-1 gap-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm md:grid-cols-3">
-          <div className="border-r border-gray-100 overflow-y-auto md:col-span-1 hide-scrollbar">
+          <div className="hide-scrollbar overflow-y-auto border-r border-gray-100 md:col-span-1">
             {convs.map((c) => (
               <button key={c.conversation_id} data-testid={`conv-${c.conversation_id}`} onClick={() => openConv(c)}
                 className={cn("flex w-full items-center gap-3 border-b border-gray-50 p-4 text-left hover:bg-gray-50", active?.conversation_id === c.conversation_id && "bg-askool-bluelight")}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-askool-blue text-sm font-semibold text-white">{(c.other_name || "?").charAt(0)}</span>
-                <div className="min-w-0"><div className="truncate font-medium text-gray-900">{c.other_name}</div><div className="truncate text-xs text-muted-foreground">{c.last_message}</div></div>
+                <div className="min-w-0 flex-1"><div className="flex items-center gap-1 truncate font-medium text-gray-900">{c.other_name}{c.is_blocked && <Ban size={12} className="text-red-400" />}</div><div className="truncate text-xs text-muted-foreground">{c.last_message}</div></div>
               </button>
             ))}
           </div>
           <div className="flex flex-col md:col-span-2">
             {active ? (
               <>
-                <div className="border-b border-gray-100 p-4 font-display font-semibold text-gray-900">{active.other_name}</div>
-                <div className="flex-1 space-y-2 overflow-y-auto p-4 hide-scrollbar">
-                  {messages.map((m) => (
-                    <div key={m.message_id} className={cn("max-w-[75%] rounded-2xl px-4 py-2 text-sm", m.sender_user_id === user.user_id ? "ml-auto bg-askool-blue text-white" : "bg-gray-100 text-gray-800")}>{m.content}</div>
-                  ))}
+                <div className="flex items-center justify-between border-b border-gray-100 p-4">
+                  <span className="font-display font-semibold text-gray-900">{active.other_name}</span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild><button data-testid="conv-menu-btn" className="rounded-lg p-2 hover:bg-gray-100"><MoreVertical size={18} className="text-gray-500" /></button></DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem data-testid="block-btn" onClick={toggleBlock}>
+                        {blocked ? <><ShieldOff size={15} className="mr-2" /> Débloquer</> : <><Ban size={15} className="mr-2" /> Bloquer</>}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem data-testid="report-btn" onClick={() => setReportOpen(true)} className="text-red-600"><Flag size={15} className="mr-2" /> Signaler</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="hide-scrollbar flex-1 space-y-2 overflow-y-auto p-4">
+                  {messages.map((m) => {
+                    const mine = m.sender_user_id === user.user_id;
+                    return (
+                      <div key={m.message_id} className={cn("max-w-[75%] rounded-2xl px-4 py-2 text-sm", mine ? "ml-auto bg-askool-blue text-white" : "bg-gray-100 text-gray-800")}>
+                        {m.content && <div>{m.content}</div>}
+                        {m.attachment && (
+                          <div className={cn("mt-1", m.content && "border-t pt-2", mine ? "border-white/20" : "border-gray-200")}>
+                            {(m.attachment.content_type || "").startsWith("image") ? (
+                              <DocViewer fileId={m.attachment.file_id} filename={m.attachment.name} contentType={m.attachment.content_type}>
+                                <SecureFile fileId={m.attachment.file_id} contentType={m.attachment.content_type} filename={m.attachment.name} className="max-h-40 rounded-lg object-cover" />
+                              </DocViewer>
+                            ) : (
+                              <DocViewer fileId={m.attachment.file_id} filename={m.attachment.name} contentType={m.attachment.content_type}
+                                triggerClassName={cn("flex items-center gap-2 rounded-lg px-2 py-1 text-sm underline", mine ? "text-white" : "text-askool-blue")}>
+                                <FileText size={15} /> {m.attachment.name}
+                              </DocViewer>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                   <div ref={endRef} />
                 </div>
-                <div className="flex gap-2 border-t border-gray-100 p-3">
-                  <Input data-testid="message-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Écrivez un message…" className="rounded-xl" />
-                  <Button data-testid="send-btn" onClick={send} className="rounded-xl bg-askool-blue text-white"><Send size={16} /></Button>
-                </div>
+                {blocked ? (
+                  <div data-testid="blocked-banner" className="border-t border-gray-100 bg-red-50 p-4 text-center text-sm text-red-600">
+                    {active.blocked_by_me ? "Vous avez bloqué cette conversation." : "Cette conversation est bloquée."} {active.blocked_by_me && <button onClick={toggleBlock} className="font-semibold underline">Débloquer</button>}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 border-t border-gray-100 p-3">
+                    <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden" onChange={onFile} data-testid="attach-input" />
+                    <button data-testid="attach-btn" onClick={() => fileRef.current?.click()} disabled={uploading} className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 disabled:opacity-50">
+                      {uploading ? <Loader2 size={18} className="animate-spin" /> : <Paperclip size={18} />}
+                    </button>
+                    <Input data-testid="message-input" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === "Enter" && send()} placeholder="Écrivez un message…" className="rounded-xl" />
+                    <Button data-testid="send-btn" onClick={() => send()} className="rounded-xl bg-askool-blue text-white"><Send size={16} /></Button>
+                  </div>
+                )}
               </>
             ) : <div className="flex flex-1 items-center justify-center text-muted-foreground">Sélectionnez une conversation</div>}
           </div>
         </div>
       )}
+
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent><DialogHeader><DialogTitle>Signaler {active?.other_name}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Décrivez le problème. Notre équipe examinera votre signalement.</p>
+          <Textarea data-testid="report-reason" value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={4} placeholder="Motif du signalement…" className="rounded-lg" />
+          <Button data-testid="submit-report-btn" onClick={submitReport} disabled={reportReason.trim().length < 5} className="rounded-xl bg-red-600 text-white hover:bg-red-700">Envoyer le signalement</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

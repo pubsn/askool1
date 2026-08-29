@@ -29,8 +29,17 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - SEO: metadata, OG, robots.txt, sitemap.xml, URLs propres FR
 - Données démo Sénégal: 8 éducateurs, 3 écoles, offres, 25 avis, comptes parent/apprenant
 
+## Implemented (2026-08-29, itération 2 — features supplémentaires)
+- Carte interactive Leaflet (react-leaflet v5) des éducateurs par région sur /educateurs (bascule Liste/Carte, marqueurs cliquables + popup)
+- Téléversement sécurisé (stockage objets Emergent) : photos publiques (aperçu), CV/diplômes privés ; contrôle d'accès 403 sans auth / 200 propriétaire+admin ; revue admin des documents
+- Messagerie enrichie : pièces jointes (privées, accès participants uniquement), blocage/déblocage de conversation, signalement d'utilisateur
+- Visionneuse de documents en superposition (DocViewer) côté admin et pour les pièces jointes (image/PDF in-page, pas de nouvel onglet)
+- Admin : onglet Signalements (traiter), documents de vérification ouverts en overlay
+
 ## Verified
-27/27 tests backend PASS, tous les flux UI OK (testing agent iteration_1).
+- iteration_1 : 27/27 backend + flux UI OK
+- iteration_2 : 14/14 uploads + carte + accès privé OK
+- iteration_3 : 7/7 flux messagerie enrichie + DocViewer OK
 
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage

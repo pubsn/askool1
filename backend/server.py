@@ -556,7 +556,16 @@ async def toggle_favorite(body: FavoriteBody, user: dict = Depends(get_current_u
 # ================= messaging =================
 class MessageBody(BaseModel):
     recipient_user_id: str
-    content: str
+    content: str = ""
+    attachment_file_id: Optional[str] = None
+
+
+def _conv_flags(c: dict, uid: str) -> dict:
+    blocks = c.get("blocks", [])
+    c["blocked_by_me"] = uid in blocks
+    c["blocked_by_other"] = any(b != uid for b in blocks)
+    c["is_blocked"] = len(blocks) > 0
+    return c
 
 
 @api.get("/conversations")
@@ -569,6 +578,7 @@ async def list_conversations(user: dict = Depends(get_current_user)):
             c["other_name"] = (ou or {}).get("name", "Utilisateur")
             c["other_user_id"] = others[0]
             c["other_avatar"] = (ou or {}).get("avatar_url")
+        _conv_flags(c, user["user_id"])
     return {"results": docs}
 
 
@@ -580,26 +590,75 @@ async def get_messages(conversation_id: str, user: dict = Depends(get_current_us
     msgs = await db.messages.find({"conversation_id": conversation_id}, {"_id": 0}).sort("created_at", 1).to_list(500)
     await db.messages.update_many({"conversation_id": conversation_id, "sender_user_id": {"$ne": user["user_id"]}},
                                   {"$set": {"read": True}})
-    return {"results": msgs}
+    return {"results": msgs, "conversation": _conv_flags(conv, user["user_id"])}
 
 
 @api.post("/messages")
 async def send_message(body: MessageBody, user: dict = Depends(get_current_user)):
+    if not (body.content or "").strip() and not body.attachment_file_id:
+        raise HTTPException(status_code=400, detail="Message vide")
     pair = sorted([user["user_id"], body.recipient_user_id])
     conv = await db.conversations.find_one({"participants": {"$all": pair, "$size": 2}}, {"_id": 0})
+    if conv and conv.get("blocks"):
+        raise HTTPException(status_code=403, detail="Cette conversation est bloquée")
+
+    attachment = None
+    if body.attachment_file_id:
+        f = await db.files.find_one({"file_id": body.attachment_file_id, "user_id": user["user_id"], "is_deleted": False}, {"_id": 0})
+        if not f:
+            raise HTTPException(status_code=400, detail="Pièce jointe introuvable")
+        attachment = {"file_id": f["file_id"], "name": f["original_filename"], "content_type": f["content_type"]}
+
+    preview = body.content if body.content else ("📎 " + (attachment["name"] if attachment else "Pièce jointe"))
     if not conv:
-        conv = {"conversation_id": new_id("conv"), "participants": pair,
-                "last_message": body.content, "updated_at": now_iso(), "created_at": now_iso()}
+        conv = {"conversation_id": new_id("conv"), "participants": pair, "blocks": [],
+                "last_message": preview, "updated_at": now_iso(), "created_at": now_iso()}
         await db.conversations.insert_one(conv)
     else:
         await db.conversations.update_one({"conversation_id": conv["conversation_id"]},
-                                          {"$set": {"last_message": body.content, "updated_at": now_iso()}})
+                                          {"$set": {"last_message": preview, "updated_at": now_iso()}})
     msg = {"message_id": new_id("msg"), "conversation_id": conv["conversation_id"],
-           "sender_user_id": user["user_id"], "content": body.content, "read": False, "created_at": now_iso()}
+           "sender_user_id": user["user_id"], "content": body.content, "attachment": attachment,
+           "read": False, "created_at": now_iso()}
     await db.messages.insert_one(msg)
     await notify(body.recipient_user_id, "message", "Nouveau message",
                  f"{user.get('name')} vous a envoyé un message", "/dashboard/messages")
     return {"message": {k: v for k, v in msg.items() if k != "_id"}, "conversation_id": conv["conversation_id"]}
+
+
+@api.post("/conversations/{conversation_id}/block")
+async def block_conversation(conversation_id: str, user: dict = Depends(get_current_user)):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or user["user_id"] not in conv["participants"]:
+        raise HTTPException(status_code=404, detail="Conversation introuvable")
+    await db.conversations.update_one({"conversation_id": conversation_id}, {"$addToSet": {"blocks": user["user_id"]}})
+    return {"message": "Conversation bloquée", "is_blocked": True}
+
+
+@api.post("/conversations/{conversation_id}/unblock")
+async def unblock_conversation(conversation_id: str, user: dict = Depends(get_current_user)):
+    conv = await db.conversations.find_one({"conversation_id": conversation_id}, {"_id": 0})
+    if not conv or user["user_id"] not in conv["participants"]:
+        raise HTTPException(status_code=404, detail="Conversation introuvable")
+    await db.conversations.update_one({"conversation_id": conversation_id}, {"$pull": {"blocks": user["user_id"]}})
+    return {"message": "Conversation débloquée", "is_blocked": False}
+
+
+class ReportBody(BaseModel):
+    target_user_id: str
+    conversation_id: Optional[str] = None
+    reason: str
+
+
+@api.post("/reports")
+async def create_report(body: ReportBody, user: dict = Depends(get_current_user)):
+    target = await db.users.find_one({"user_id": body.target_user_id}, {"_id": 0})
+    doc = {"report_id": new_id("report"), "reporter_user_id": user["user_id"], "reporter_name": user.get("name"),
+           "target_user_id": body.target_user_id, "target_name": (target or {}).get("name", ""),
+           "conversation_id": body.conversation_id, "reason": body.reason,
+           "status": "Ouvert", "created_at": now_iso()}
+    await db.reports.insert_one(doc)
+    return {"report": {k: v for k, v in doc.items() if k != "_id"}, "message": "Signalement transmis à notre équipe"}
 
 
 # ================= notifications =================
@@ -681,6 +740,7 @@ async def admin_stats(user: dict = Depends(require_roles("ADMIN"))):
         "reviews": await db.reviews.count_documents({}),
         "subscriptions": await db.subscriptions.count_documents({}),
         "pending_verifications": await db.verifications.count_documents({"status": "En cours de vérification"}),
+        "reports": await db.reports.count_documents({"status": "Ouvert"}),
         "revenue": 0,
     }
 
@@ -727,6 +787,21 @@ async def admin_update_plans(body: PlansBody, user: dict = Depends(require_roles
     return {"message": "Tarifs mis à jour"}
 
 
+@api.get("/admin/reports")
+async def admin_reports(user: dict = Depends(require_roles("ADMIN"))):
+    docs = await db.reports.find({}, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return {"results": docs}
+
+
+@api.put("/admin/reports/{report_id}")
+async def admin_update_report(report_id: str, body: StatusBody, user: dict = Depends(require_roles("ADMIN"))):
+    r = await db.reports.find_one({"report_id": report_id}, {"_id": 0})
+    if not r:
+        raise HTTPException(status_code=404, detail="Introuvable")
+    await db.reports.update_one({"report_id": report_id}, {"$set": {"status": body.status}})
+    return {"message": "ok"}
+
+
 # ================= uploads / files =================
 MAX_UPLOAD = 8 * 1024 * 1024  # 8 MB
 
@@ -737,13 +812,13 @@ async def upload_file(file: UploadFile = File(...), category: str = "photo",
     ext = (file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "bin").lower()
     if category == "photo" and ext not in ("jpg", "jpeg", "png", "webp"):
         raise HTTPException(status_code=400, detail="Photo: formats acceptés jpg, png, webp")
-    if category in ("cv", "diploma") and ext not in ("pdf", "jpg", "jpeg", "png"):
-        raise HTTPException(status_code=400, detail="Document: formats acceptés pdf, jpg, png")
+    if category in ("cv", "diploma", "attachment") and ext not in ("pdf", "jpg", "jpeg", "png", "webp"):
+        raise HTTPException(status_code=400, detail="Document: formats acceptés pdf, jpg, png, webp")
     data = await file.read()
     if len(data) > MAX_UPLOAD:
         raise HTTPException(status_code=400, detail="Fichier trop volumineux (max 8 Mo)")
-    # sensitive documents are always private
-    vis = "private" if category in ("cv", "diploma") else (visibility if visibility in ("public", "private") else "public")
+    # sensitive documents & message attachments are always private
+    vis = "private" if category in ("cv", "diploma", "attachment") else (visibility if visibility in ("public", "private") else "public")
     file_id = new_id("file")
     content_type = MIME_TYPES.get(ext, file.content_type or "application/octet-stream")
     path = f"{APP_NAME}/uploads/{user['user_id']}/{file_id}.{ext}"
@@ -803,7 +878,14 @@ async def serve_file(file_id: str, request: Request = None, authorization: str =
         if u:
             full = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0})
             admin = full and full.get("role") == "ADMIN"
-        if not u or (u["user_id"] != rec["user_id"] and not admin):
+        allowed = bool(u) and (u["user_id"] == rec["user_id"] or admin)
+        # message attachments: any participant of a conversation containing this file may view it
+        if not allowed and u and rec.get("category") == "attachment":
+            msg = await db.messages.find_one({"attachment.file_id": file_id}, {"_id": 0, "conversation_id": 1})
+            if msg:
+                conv = await db.conversations.find_one({"conversation_id": msg["conversation_id"]}, {"_id": 0})
+                allowed = bool(conv) and u["user_id"] in conv.get("participants", [])
+        if not allowed:
             raise HTTPException(status_code=403, detail="Accès refusé à ce document privé")
     try:
         data, ct = await asyncio.to_thread(get_object, rec["storage_path"])
