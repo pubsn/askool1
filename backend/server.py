@@ -1,9 +1,10 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query, UploadFile, File, Header, Response, Request
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query, UploadFile, File, Header, Response, Request, BackgroundTasks
 from dotenv import load_dotenv
 from pathlib import Path
 import os
 import uuid
 import asyncio
+import hmac
 import logging
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -833,6 +834,138 @@ async def subscribe(body: SubscriptionBody, user: dict = Depends(get_current_use
         await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"is_premium": True}})
     return {"subscription": {k: v for k, v in doc.items() if k != "_id"},
             "message": "Abonnement enregistré. Le paiement Mobile Money sera activé prochainement."}
+
+
+# ================= payments (Mobile Money) =================
+PAYMENTS_MODE = os.environ.get("PAYMENTS_MODE", "mock")
+PROVIDERS = {"orange_money": "Orange Money", "wave": "Wave"}
+
+
+def _plan_amount(audience: str, plan: str) -> int:
+    for p in DEFAULT_PLANS.get(audience, []):
+        if p["name"].lower() == (plan or "").lower():
+            digits = "".join(ch for ch in p["price"] if ch.isdigit())
+            return int(digits) if digits else 0
+    return 0
+
+
+class PaymentInitBody(BaseModel):
+    purpose: str  # "subscription" | "booking"
+    provider: str
+    phone: str
+    plan: Optional[str] = None
+    audience: Optional[str] = None
+    booking_id: Optional[str] = None
+
+
+@api.post("/payments/initiate")
+async def initiate_payment(body: PaymentInitBody, user: dict = Depends(get_current_user)):
+    if body.provider not in PROVIDERS:
+        raise HTTPException(status_code=400, detail="Opérateur non supporté")
+    if body.purpose == "subscription":
+        audience = body.audience or ("school" if user["role"] == "SCHOOL" else "family" if user["role"] in ("PARENT", "ADULT_LEARNER") else "educator")
+        amount = _plan_amount(audience, body.plan or "")
+        label = f"Abonnement {body.plan}"
+        meta = {"plan": body.plan, "audience": audience}
+    elif body.purpose == "booking":
+        b = await db.bookings.find_one({"booking_id": body.booking_id, "client_user_id": user["user_id"]}, {"_id": 0})
+        if not b:
+            raise HTTPException(status_code=404, detail="Réservation introuvable")
+        if b.get("payment_status") == "payé":
+            raise HTTPException(status_code=409, detail="Cette réservation est déjà payée")
+        amount = b.get("price", 0)
+        label = f"Cours avec {b.get('educator_name')}"
+        meta = {"booking_id": body.booking_id}
+    else:
+        raise HTTPException(status_code=400, detail="Objet de paiement invalide")
+
+    pid = new_id("pay")
+    doc = {"payment_id": pid, "user_id": user["user_id"], "purpose": body.purpose, "provider": body.provider,
+           "phone": body.phone, "amount": amount, "currency": "XOF", "label": label, "status": "pending",
+           "mode": PAYMENTS_MODE, "meta": meta, "created_at": now_iso()}
+    await db.payments.insert_one(doc)
+    # MOCK gateway: in production, call Paystack/aggregator here and return an authorization URL.
+    return {"payment_id": pid, "amount": amount, "currency": "XOF", "provider": PROVIDERS[body.provider],
+            "label": label, "mode": PAYMENTS_MODE,
+            "instructions": f"Un code de confirmation a été envoyé au {body.phone}. (Mode démo : saisissez n'importe quel code à 4 chiffres.)"}
+
+
+class PaymentConfirmBody(BaseModel):
+    code: str
+
+
+@api.post("/payments/{payment_id}/confirm")
+async def confirm_payment(payment_id: str, body: PaymentConfirmBody, user: dict = Depends(get_current_user)):
+    pay = await db.payments.find_one({"payment_id": payment_id, "user_id": user["user_id"]}, {"_id": 0})
+    if not pay:
+        raise HTTPException(status_code=404, detail="Paiement introuvable")
+    if pay["status"] == "success":
+        return {"status": "success", "message": "Paiement déjà confirmé"}
+    # MOCK confirmation: accept any 4-digit code. Replace with real provider verification.
+    if not (body.code and body.code.isdigit() and len(body.code) == 4):
+        raise HTTPException(status_code=400, detail="Code invalide (4 chiffres attendus)")
+    # Atomic transition pending -> success (idempotency guard against concurrent confirms)
+    updated = await db.payments.find_one_and_update(
+        {"payment_id": payment_id, "status": "pending"},
+        {"$set": {"status": "success", "confirmed_at": now_iso()}},
+    )
+    if not updated:
+        return {"status": "success", "message": "Paiement déjà confirmé"}
+
+    if pay["purpose"] == "subscription":
+        plan = pay["meta"].get("plan")
+        await db.subscriptions.insert_one({"subscription_id": new_id("sub"), "user_id": user["user_id"],
+                                           "plan": plan, "audience": pay["meta"].get("audience"),
+                                           "status": "active", "payment_id": payment_id,
+                                           "payment_method": pay["provider"], "created_at": now_iso()})
+        if (plan or "").lower() in ("premium", "pro", "pass famille"):
+            await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"is_premium": True}})
+        await notify(user["user_id"], "subscription", "Abonnement activé",
+                     f"Votre abonnement {plan} est actif. Merci !", "/dashboard/abonnement")
+    elif pay["purpose"] == "booking":
+        bid = pay["meta"].get("booking_id")
+        b = await db.bookings.find_one({"booking_id": bid}, {"_id": 0})
+        await db.bookings.update_one({"booking_id": bid}, {"$set": {"payment_status": "payé", "status": "Confirmé"}})
+        if b:
+            await notify(b["educator_user_id"], "booking", "Cours payé et confirmé",
+                         f"{user.get('name')} a payé le cours du {b['date']} à {b['time']}.", "/dashboard/reservations")
+            await notify(user["user_id"], "booking", "Paiement confirmé",
+                         f"Votre cours du {b['date']} est confirmé et payé.", "/dashboard/reservations")
+    return {"status": "success", "message": "Paiement confirmé avec succès"}
+
+
+@api.get("/payments/mine")
+async def my_payments(user: dict = Depends(get_current_user)):
+    docs = await db.payments.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"results": docs}
+
+
+# ================= cron: lesson reminders =================
+async def _run_lesson_reminders():
+    from datetime import date, timedelta as _td
+    tomorrow = (datetime.now(timezone.utc).date() + _td(days=1)).isoformat()
+    bookings = await db.bookings.find({"date": tomorrow, "status": {"$in": ["Confirmé", "En attente"]},
+                                       "reminder_sent": {"$ne": True}}, {"_id": 0}).to_list(1000)
+    for b in bookings:
+        await notify(b["client_user_id"], "reminder", "Rappel de cours",
+                     f"Rappel : votre cours de {b.get('subject') or 'tutorat'} avec {b.get('educator_name')} est demain à {b['time']}.",
+                     "/dashboard/reservations")
+        await notify(b["educator_user_id"], "reminder", "Rappel de cours",
+                     f"Rappel : cours avec {b.get('client_name')} demain à {b['time']}.",
+                     "/dashboard/reservations")
+        await db.bookings.update_one({"booking_id": b["booking_id"]}, {"$set": {"reminder_sent": True}})
+    return len(bookings)
+
+
+@api.post("/cron/lesson-reminders")
+async def cron_lesson_reminders(background_tasks: BackgroundTasks, authorization: str = Header(None)):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    secret = os.environ.get("WEBHOOK_CRON_SECRET", "")
+    token = authorization[7:] if (authorization or "").startswith("Bearer ") else ""
+    if not secret or not hmac.compare_digest(token, secret):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    background_tasks.add_task(_run_lesson_reminders)
+    return {"accepted": True}
 
 
 # ================= admin =================

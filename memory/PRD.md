@@ -51,6 +51,15 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - iteration_3 : 7/7 flux messagerie enrichie + DocViewer OK
 - iteration_4 : distance filter + présence + accusés de lecture 100% OK
 
+## Implemented (2026-06, itération 5 — Paiement Mobile Money + Rappels)
+- Paiement Mobile Money (Orange Money / Wave) — passerelle MOCK (mode démo, code 4 chiffres) : `POST /api/payments/initiate`, `POST /api/payments/{id}/confirm`, `GET /api/payments/mine`
+- Modal de paiement réutilisable `PaymentDialog.jsx` (choix opérateur → téléphone → confirmation par code)
+- Abonnement : passage Premium après confirmation ; formule Gratuite (0 FCFA) activée sans passer par le paiement
+- Réservations : bouton « Payer le cours » → statut `payment_status='payé'` + `status='Confirmé'`
+- Garde-fous : refus paiement d'une réservation déjà payée (409), transition atomique pending→success (idempotence)
+- Cron rappels de cours : `POST /api/cron/lesson-reminders` (auth Bearer WEBHOOK_CRON_SECRET, 401 sinon) + `/app/.emergent/crons.yml` (09h Dakar, notifie parent + éducateur la veille)
+- Vérifié iteration_6 : backend 6/6 pytest + flux frontend abonnement & réservation OK
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

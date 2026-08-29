@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Calendar } from "lucide-react";
+import { PaymentDialog } from "@/components/PaymentDialog";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -16,6 +17,7 @@ export default function Bookings() {
   const navigate = useNavigate();
   const [rows, setRows] = useState(null);
   const [review, setReview] = useState({ rating: 5, comment: "" });
+  const [payBooking, setPayBooking] = useState(null);
   const load = () => api.get("/bookings/mine").then(({ data }) => setRows(data.results)).catch(() => setRows([]));
   useEffect(() => { load(); }, []);
 
@@ -41,6 +43,10 @@ export default function Bookings() {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`rounded-full px-3 py-1 text-xs font-medium ${COLORS[b.status]}`}>{b.status}</span>
+                  {b.payment_status === "payé" && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">Payé</span>}
+                  {!isEducator && b.payment_status !== "payé" && b.status !== "Annulé" && (b.price || 0) > 0 && (
+                    <Button size="sm" data-testid={`pay-booking-${b.booking_id}`} onClick={() => setPayBooking(b)} className="rounded-lg bg-askool-orange font-semibold text-black hover:bg-askool-orangehover">Payer le cours</Button>
+                  )}
                   {isEducator && b.status === "En attente" && <Button size="sm" onClick={() => setStatus(b.booking_id, "Confirmé")} className="rounded-lg bg-emerald-600 text-white">Confirmer</Button>}
                   {b.status === "Confirmé" && <Button size="sm" variant="outline" onClick={() => setStatus(b.booking_id, "Terminé")} className="rounded-lg">Marquer terminé</Button>}
                   {!isEducator && b.status === "Terminé" && (
@@ -61,6 +67,13 @@ export default function Bookings() {
           })}
         </div>
       )}
+      <PaymentDialog
+        open={!!payBooking}
+        onOpenChange={(v) => { if (!v) setPayBooking(null); }}
+        payload={payBooking ? { purpose: "booking", booking_id: payBooking.booking_id, label: `Cours avec ${payBooking.educator_name}` } : null}
+        amountLabel={payBooking ? `${(payBooking.price || 0).toLocaleString()} FCFA` : null}
+        onSuccess={() => { setPayBooking(null); load(); }}
+      />
     </div>
   );
 }

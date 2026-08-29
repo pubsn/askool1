@@ -1,0 +1,9 @@
+crons:
+  - name: lesson-reminders
+    description: "Notifie parents et éducateurs la veille d'un cours réservé (rappel quotidien à 09h Dakar)"
+    cron: "0 9 * * *"
+    timezone: "Africa/Dakar"
+    endpoint: "{{BASE_URL}}/api/cron/lesson-reminders"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

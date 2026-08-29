@@ -1,0 +1,33 @@
+{
+  "summary": "Iteration 6 - Full validation of Mobile Money payments (mocked gateway) + cron auth for ASKOOL. Backend: created /app/backend/tests/test_payments.py (pytest) with 6 tests covering (1) subscription initiate+confirm on Orange Money with amount>0 and instructions field returned, code '1234' confirms, /auth/me shows is_premium=true after; (2) initiate with unsupported provider 'mtn' returns 400; (3) confirm with invalid codes ('12','abcd','12345') all return 400; (4) GET /payments/mine returns caller's payments list; (5) parent booking flow: initiate purpose=booking on Wave then confirm with 4-digit code, booking payment_status becomes 'payé' and status 'Confirmé'; (6) POST /cron/lesson-reminders returns 401 without secret and with wrong Bearer. All 6 backend tests pass. Frontend E2E on the public preview URL: (a) Educator awa.ndiaye@askool.sn logs in via /connexion, navigates to /dashboard/abonnement (2 plans rendered: Gratuit + Premium), clicks subscribe-Premium -> payment-dialog opens with both pay-provider-orange_money and pay-provider-wave buttons -> select Orange Money -> enter phone -> pay-initiate-btn -> code step reached -> enter 1234 -> pay-confirm-btn -> dialog auto-closes and premium banner 'Vous bénéficiez actuellement d'un abonnement Premium' is visible. (b) Parent parent@askool.sn: initial /dashboard/reservations had a single booking that was already Payé (from backend test #5), so pay-booking-<id> button was correctly hidden. Seeded a fresh unpaid booking via API, reloaded UI: pay-booking-<id> button appears; clicking opens payment-dialog, selecting Wave, phone, initiate, code 5678, confirm -> success toast 'Paiement confirmé avec succès !' displayed and the row now shows 'Payé' badge. Both flows successful.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_payments.py",
+    "/app/test_reports/pytest/payments.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py confirm_payment: does not verify amount>0 before creating a subscription/marking booking paid. In mock mode a 0-XOF payment can still activate a subscription (Gratuit plan yields amount=0). Consider rejecting amount==0 or skipping is_premium activation for free-plan payments.",
+    "server.py confirm_payment: no idempotency lock — two concurrent confirm calls on the same payment_id could each pass the pending check and re-insert a subscription/notify twice. Consider using find_one_and_update({status:'pending'}) to atomically transition.",
+    "server.py initiate_payment for purpose='booking' does not check that booking price>0 or that booking is not already paid; a client could re-initiate on an already-paid booking. Add guard: if b.payment_status=='payé' -> 409.",
+    "PaymentDialog.jsx: phone validation `/^\\d{9,}$/` allows arbitrarily long numeric strings; consider tighter Senegal format (e.g. 9 digits, starts with 7).",
+    "PaymentDialog.jsx: on success, dialog is closed BEFORE onSuccess() runs -> if refreshUser/load throws, the user has no visual signal. Consider awaiting the callback inside try/catch.",
+    "Subscription.jsx: 'Gratuit' plan (amount 0) also opens payment dialog; UX-wise a free plan should not go through Mobile Money — bypass PaymentDialog when p.price starts with 'Gratuit' or amount is 0.",
+    "Backend PAYMENTS_MODE is 'mock' and cron secret is committed in .env (WEBHOOK_CRON_SECRET). Fine for demo, but rotate before production and enforce PAYMENTS_MODE guard on confirm (reject 4-digit shortcut when mode != 'mock')."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_payments.py (new)"
+  ],
+  "success_rate": {"backend": "100% (6/6 pytest)", "frontend": "100% (subscription + booking pay flows OK end-to-end)"},
+  "test_credentials": "awa.ndiaye@askool.sn / Askool2026! (EDUCATOR); parent@askool.sn / Askool2026! (PARENT); pubsn01@gmail.com / Askool2026! (ADMIN).",
+  "seed_data_creation": "Backend test run created ~3 successful payment docs on awa.ndiaye (subscription Premium x1, wave subscription x1) and toggled is_premium=true; parent has 2 paid bookings (book with Mamadou Diallo 2026-02-01 from backend test #5, and book with Awa Ndiaye 2030-05-10 from frontend seed). None of these need cleanup for further testing.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Run backend regression with: `pytest /app/backend/tests/test_payments.py -v`. Note test #1 flips awa.ndiaye is_premium to true persistently — if a later test requires a non-premium educator, use mamadou.diallo@askool.sn or ibrahima.fall@askool.sn. Frontend testids reusable: subscribe-<planName>, pay-booking-<booking_id>, payment-dialog, pay-provider-orange_money, pay-provider-wave, pay-phone-input, pay-initiate-btn, pay-code-input, pay-confirm-btn. Login page is at /connexion (not /login).",
+  "rca of the issue": "No functional issue. Only advisory code-review items above (idempotency, amount==0 free-plan gating, duplicate-pay guard on already-paid booking)."
+}

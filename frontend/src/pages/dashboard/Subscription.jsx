@@ -3,18 +3,25 @@ import { Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
+import { PaymentDialog } from "@/components/PaymentDialog";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 export default function Subscription() {
   const { user, refreshUser } = useAuth();
   const [plans, setPlans] = useState([]);
+  const [pay, setPay] = useState(null); // { plan, price } | null
   const audience = user?.role === "SCHOOL" ? "school" : (user?.role === "PARENT" || user?.role === "ADULT_LEARNER") ? "family" : "educator";
   useEffect(() => { api.get("/plans").then(({ data }) => setPlans(data.plans[audience] || [])).catch(() => {}); }, [audience]);
 
   const subscribe = async (plan) => {
-    try { await api.post("/subscriptions", { plan: plan.name, audience }); toast.success("Abonnement enregistré. Paiement Mobile Money bientôt disponible."); refreshUser(); }
-    catch { toast.error("Erreur"); }
+    const amount = parseInt((plan.price || "").replace(/\D/g, "") || "0", 10);
+    if (amount === 0) {
+      try { await api.post("/subscriptions", { plan: plan.name, audience }); toast.success("Formule gratuite activée."); refreshUser(); }
+      catch { toast.error("Erreur"); }
+      return;
+    }
+    setPay(plan);
   };
 
   if (!plans.length) return <Loader />;
@@ -33,7 +40,14 @@ export default function Subscription() {
           </div>
         ))}
       </div>
-      <p className="mt-8 text-sm text-muted-foreground">💳 Le paiement se fera via Mobile Money (Orange Money, Wave) — intégration en préparation.</p>
+      <p className="mt-8 text-sm text-muted-foreground">💳 Paiement sécurisé via Mobile Money (Orange Money, Wave).</p>
+      <PaymentDialog
+        open={!!pay}
+        onOpenChange={(v) => { if (!v) setPay(null); }}
+        payload={pay ? { purpose: "subscription", plan: pay.name, audience, label: `Abonnement ${pay.name}` } : null}
+        amountLabel={pay?.price}
+        onSuccess={() => { setPay(null); refreshUser(); }}
+      />
     </div>
   );
 }
