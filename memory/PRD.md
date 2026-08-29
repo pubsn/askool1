@@ -41,6 +41,10 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Statut en ligne : indicateur « En ligne / Vu il y a X min/h/j / Hors ligne » (heartbeat /presence/ping, seuil 120s), pastille verte dans la liste de conversations
 - Accusés de lecture : « Envoyé » / « Vu » sur le dernier message envoyé (rafraîchissement auto de la conversation)
 
+## Implemented (2026-08-29, itération 4)
+- Bouton « Autour de moi » : géolocalisation GPS du navigateur qui centre la carte sur la position de l'utilisateur (vue Carte)
+- Alertes de zone : un parent/apprenant définit un point + rayon (+ matière/niveau optionnels) et est notifié dès qu'un nouvel éducateur correspondant rejoint sa zone (déclenché à la création/màj de profil éducateur, dédup par éducateur). Page « Alertes de zone » dans le dashboard (créer via carte, lister, supprimer)
+
 ## Verified
 - iteration_1 : 27/27 backend + flux UI OK
 - iteration_2 : 14/14 uploads + carte + accès privé OK

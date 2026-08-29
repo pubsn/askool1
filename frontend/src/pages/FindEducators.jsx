@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { SlidersHorizontal, MapPin, List, Map as MapIcon, X } from "lucide-react";
+import { SlidersHorizontal, MapPin, List, Map as MapIcon, X, LocateFixed, BellPlus } from "lucide-react";
 import PublicLayout from "@/components/layout/PublicLayout";
 import EducatorCard from "@/components/EducatorCard";
 import EducatorMap from "@/components/EducatorMap";
@@ -9,6 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 
 export default function FindEducators() {
@@ -44,6 +47,29 @@ export default function FindEducators() {
   const set = (k, v) => setFilters((f) => ({ ...f, [k]: v }));
   const reset = () => setFilters({ q: "", subject: "", level: "", service_type: "", region: "", min_experience: "", diploma: "", max_rate: "", min_rating: "", verified_only: false, sort: "relevance" });
 
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const canAlert = user && (user.role === "PARENT" || user.role === "ADULT_LEARNER");
+
+  const locateMe = () => {
+    if (!navigator.geolocation) { toast.error("Géolocalisation non disponible sur cet appareil."); return; }
+    setView("map");
+    toast.loading("Localisation en cours…", { id: "geo" });
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setCenter([pos.coords.latitude, pos.coords.longitude]); toast.success("Centré sur votre position", { id: "geo" }); },
+      () => toast.error("Impossible d'obtenir votre position. Autorisez la localisation.", { id: "geo" }),
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  const createAlert = async () => {
+    if (!user) { toast.error("Connectez-vous pour créer une alerte."); navigate("/connexion"); return; }
+    try {
+      await api.post("/zone-alerts", { lat: center[0], lng: center[1], radius_km: radius, subject: filters.subject || null, level: filters.level || null });
+      toast.success("Alerte créée ! Vous serez notifié dès qu'un éducateur correspondant rejoint votre zone.");
+    } catch { toast.error("Erreur lors de la création de l'alerte."); }
+  };
+
   const Select = ({ k, label, options }) => (
     <div><Label className="text-xs">{label}</Label>
       <select data-testid={`filter-${k}`} value={filters[k]} onChange={(e) => set(k, e.target.value)}
@@ -72,7 +98,7 @@ export default function FindEducators() {
     <PublicLayout>
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <h1 className="font-display text-3xl font-bold text-gray-900 lg:text-4xl">Trouver un éducateur</h1>
-        <p className="mt-2 text-muted-foreground">{data.total} éducateur(s) disponibles au Sénégal.</p>
+        <p className="mt-2 text-muted-foreground">{data.total} éducateur(s) correspondant à votre recherche.</p>
 
         <div className="mt-6 flex gap-3">
           <Input data-testid="search-query" value={filters.q} onChange={(e) => set("q", e.target.value)} placeholder="Rechercher par nom, matière…" className="rounded-xl" />
@@ -108,11 +134,13 @@ export default function FindEducators() {
                   <p className="text-sm text-muted-foreground" data-testid="distance-hint">
                     {center ? <>Éducateurs à moins de <b className="text-askool-blue">{radius} km</b> du point choisi ({data.total} trouvé{data.total > 1 ? "s" : ""}).</> : "📍 Cliquez sur la carte pour définir votre zone de recherche."}
                   </p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button data-testid="locate-me" size="sm" variant="outline" onClick={locateMe} className="rounded-lg border-askool-blue text-askool-blue"><LocateFixed size={15} /> Autour de moi</Button>
                     <label className="flex items-center gap-2 text-sm text-gray-600">Rayon
                       <input data-testid="radius-slider" type="range" min="2" max="60" step="1" value={radius} onChange={(e) => setRadius(parseInt(e.target.value))} className="accent-askool-blue" />
                       <span className="w-12 font-medium text-gray-900">{radius} km</span>
                     </label>
+                    {center && canAlert && <Button data-testid="create-zone-alert" size="sm" onClick={createAlert} className="rounded-lg bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><BellPlus size={15} /> M'alerter</Button>}
                     {center && <Button data-testid="reset-zone" size="sm" variant="ghost" onClick={() => setCenter(null)} className="text-gray-500"><X size={14} /> Zone</Button>}
                   </div>
                 </div>

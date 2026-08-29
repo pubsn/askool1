@@ -63,6 +63,28 @@ async def notify(user_id: str, ntype: str, title: str, body: str, link: str = ""
     })
 
 
+async def notify_zone_alerts(edu: dict):
+    if edu.get("lat") is None or edu.get("lng") is None:
+        return
+    alerts = await db.zone_alerts.find({"active": True}, {"_id": 0}).to_list(500)
+    for a in alerts:
+        if a["user_id"] == edu["user_id"]:
+            continue
+        if edu["user_id"] in a.get("notified", []):
+            continue
+        if a.get("subject") and a["subject"] not in edu.get("subjects", []):
+            continue
+        if a.get("level") and a["level"] not in edu.get("levels", []):
+            continue
+        dist = haversine_km(a["lat"], a["lng"], edu["lat"], edu["lng"])
+        if dist > a.get("radius_km", 15):
+            continue
+        await notify(a["user_id"], "zone_alert", "Nouvel éducateur dans votre zone",
+                     f"{edu.get('name')} ({edu.get('profession', 'Éducateur')}) correspond à votre alerte, à {round(dist, 1)} km.",
+                     "/educateurs")
+        await db.zone_alerts.update_one({"alert_id": a["alert_id"]}, {"$addToSet": {"notified": edu["user_id"]}})
+
+
 async def educator_public(user_id: str) -> Optional[dict]:
     prof = await db.educator_profiles.find_one({"user_id": user_id}, {"_id": 0})
     if not prof:
@@ -190,6 +212,7 @@ async def upsert_my_educator_profile(body: EducatorProfileBody,
                      "created_at": now_iso()})
         await db.educator_profiles.insert_one(data)
     prof = await db.educator_profiles.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    await notify_zone_alerts(prof)
     return {"profile": prof}
 
 
@@ -587,6 +610,38 @@ async def toggle_favorite(body: FavoriteBody, user: dict = Depends(get_current_u
                                    "target_type": body.target_type, "target_id": body.target_id,
                                    "created_at": now_iso()})
     return {"favorited": True}
+
+
+# ================= zone alerts =================
+class ZoneAlertBody(BaseModel):
+    lat: float
+    lng: float
+    radius_km: float = 15
+    subject: Optional[str] = None
+    level: Optional[str] = None
+
+
+@api.post("/zone-alerts")
+async def create_zone_alert(body: ZoneAlertBody, user: dict = Depends(require_roles("PARENT", "ADULT_LEARNER"))):
+    doc = {"alert_id": new_id("alert"), "user_id": user["user_id"], **body.model_dump(),
+           "notified": [], "active": True, "created_at": now_iso()}
+    await db.zone_alerts.insert_one(doc)
+    return {"alert": {k: v for k, v in doc.items() if k != "_id"}}
+
+
+@api.get("/zone-alerts/mine")
+async def my_zone_alerts(user: dict = Depends(require_roles("PARENT", "ADULT_LEARNER"))):
+    docs = await db.zone_alerts.find({"user_id": user["user_id"], "active": True}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"results": docs}
+
+
+@api.delete("/zone-alerts/{alert_id}")
+async def delete_zone_alert(alert_id: str, user: dict = Depends(get_current_user)):
+    a = await db.zone_alerts.find_one({"alert_id": alert_id}, {"_id": 0})
+    if not a or a["user_id"] != user["user_id"]:
+        raise HTTPException(status_code=404, detail="Alerte introuvable")
+    await db.zone_alerts.update_one({"alert_id": alert_id}, {"$set": {"active": False}})
+    return {"message": "Alerte supprimée"}
 
 
 # ================= messaging =================

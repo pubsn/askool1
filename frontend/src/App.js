@@ -36,6 +36,7 @@ import MyJobs from "@/pages/dashboard/MyJobs";
 import CVtheque from "@/pages/dashboard/CVtheque";
 import SchoolProfile from "@/pages/dashboard/SchoolProfile";
 import Students from "@/pages/dashboard/Students";
+import ZoneAlerts from "@/pages/dashboard/ZoneAlerts";
 import TutoringRequests from "@/pages/dashboard/TutoringRequests";
 import Messages from "@/pages/dashboard/Messages";
 import Notifications from "@/pages/dashboard/Notifications";
@@ -81,6 +82,7 @@ function AppRouter() {
         <Route path="offres" element={<MyJobs />} />
         <Route path="cvtheque" element={<CVtheque />} />
         <Route path="eleves" element={<Students />} />
+        <Route path="alertes" element={<ZoneAlerts />} />
         <Route path="demandes" element={<TutoringRequests />} />
         <Route path="messages" element={<Messages />} />
         <Route path="notifications" element={<Notifications />} />

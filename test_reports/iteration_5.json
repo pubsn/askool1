@@ -1,0 +1,34 @@
+{
+  "summary": "Iteration 5 - Full test of the two new features: (1) 'Autour de moi' geolocation button on /educateurs Carte view, and (2) Zone alerts (create from map + list/delete on /dashboard/alertes) with backend RBAC + lifecycle + end-to-end notification pipeline. Backend: created /app/backend/tests/test_zone_alerts.py with 5 pytest cases (RBAC educator 403, anon 401, full lifecycle create/list/delete, cross-user delete 404, and E2E notification when an educator upserts a matching profile). All 5 pass. Frontend: tested anonymous + PARENT flows on the live preview URL. Anonymous on Carte view: locate-me button present + clickable, geolocation is blocked in headless and a toast 'Impossible d'obtenir votre position. Autorisez la localisation.' appears without crashing the page. Clicking an empty east area of the map (~85% width) correctly sets center, distance-hint updates to 'Éducateurs à moins de 15 km du point choisi (0 trouvé).', and importantly the 'M'alerter' (create-zone-alert) button is NOT rendered for anonymous users (RBAC gating on canAlert works). Parent flow (parent@askool.sn / Askool2026!): logged in successfully; on /educateurs Carte view, locate-me is present, before setting a center create-zone-alert is hidden; after clicking the map, distance-hint updates and create-zone-alert appears. Clicking it produces the expected success toast 'Alerte créée ! Vous serez notifié dès qu'un éducateur correspondant rejoint votre zone.'. reset-zone button clears the center and restores the initial 'Cliquez sur la carte...' hint. Radius slider is present. locate-me click doesn't crash. Navigating to /dashboard/alertes: sidebar shows the 'Alertes de zone' nav item (Bell icon), 2 existing zone-alert-<id> cards are rendered with radius / subject tags and coordinates; the empty-state CTA path was not exercised because the account already had alerts (from prior backend tests + this run). Delete button del-alert-<id> works: clicking it reduced the card count from 2 to 1. All targeted flows pass end-to-end.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/educateurs header", "issues": ["The counter '{data.total} éducateur(s) disponibles au Sénégal.' reflects the CURRENT filtered set (including near_lat/near_lng distance filter when applied), so after picking a remote map point it can show '0 éducateur(s) disponibles au Sénégal' which is misleading globally. Consider splitting between overall pool size and filtered count. LOW priority - already noted in iteration_4 code review."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_zone_alerts.py",
+    "/app/test_reports/pytest/zone_alerts.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py notify_zone_alerts: iterates ALL active alerts with a .to_list(500) on every educator upsert. For scale, add a MongoDB geospatial index (2dsphere on zone_alerts.location) and query alerts within max radius of the educator instead of loading all. Currently OK for MVP.",
+    "server.py notify_zone_alerts: 'active' filter is applied but there is no upper bound on notified list growth per alert (grows every time a new matching educator upserts). For long-lived alerts this could grow unbounded - consider TTL or capping.",
+    "server.py DELETE /zone-alerts/{alert_id} returns 404 for both 'not found' and 'not owner' - correct for privacy (no info leak).",
+    "ZoneAlerts.jsx: no pagination or empty-array error state distinction (rows === null shows Loader). If /api/zone-alerts/mine fails, .catch(() => setRows([])) shows empty state, which is indistinguishable from a genuinely-empty list. Consider toast on error.",
+    "FindEducators.jsx createAlert(): swallows the API error with a generic toast; would be more helpful to surface backend error message (e.g., unauthorized -> redirect vs. validation error).",
+    "FindEducators.jsx: canAlert relies on user.role check. Consider also disabling the button while a network call is inflight to prevent double-creation on rapid clicks (currently no isCreating state)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_zone_alerts.py (new)"
+  ],
+  "success_rate": {"backend": "100% (5/5 pytest)", "frontend": "100% - all targeted flows passed"},
+  "test_credentials": "parent@askool.sn / Askool2026! (Amadou Diagne, PARENT) and awa.ndiaye@askool.sn / Askool2026! (EDUCATOR) both confirmed working.",
+  "seed_data_creation": "Backend tests create+delete transient zone-alerts per test. Frontend parent flow left 1 additional persistent zone_alert (Rayon 15 km, Toutes matières, no subject/level) at ~(14.722, -13.931) on the parent account; the pre-existing 30 km Mathématiques alert at (14.717, -17.468) was left intact. Cleanup can be done via DELETE /api/zone-alerts/{id} if desired.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Zone alerts backend fully covered by /app/backend/tests/test_zone_alerts.py - re-run with `REACT_APP_BACKEND_URL=<url> pytest backend/tests/test_zone_alerts.py -v`. The E2E notification test tolerates the case where the educator was already in an alert's notified[] list from a previous run (checks either a fresh notification OR the notified array). If you want to force a fresh notification path, first DELETE the alerts on the parent account via /api/zone-alerts/mine + DELETE, then re-run. Frontend testids to reuse: locate-me, create-zone-alert, distance-hint, radius-slider, reset-zone, zone-alert-<id>, del-alert-<id>, goto-map-alert, view-map, view-list. For headless geolocation, expect the error toast (this is correct behavior).",
+  "rca of the issue": "No issues to RCA - both features work end-to-end (backend RBAC + lifecycle + async notification pipeline verified; frontend geolocation button graceful degrade + zone-alert creation + dashboard listing/deletion + RBAC visibility all verified)."
+}

@@ -37,6 +37,7 @@ const MENUS = {
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mes élèves", to: "/dashboard/eleves", icon: Users },
     { label: "Mes demandes", to: "/dashboard/demandes", icon: FileText },
+    { label: "Alertes de zone", to: "/dashboard/alertes", icon: Bell },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
@@ -45,6 +46,7 @@ const MENUS = {
   ADULT_LEARNER: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mes demandes", to: "/dashboard/demandes", icon: FileText },
+    { label: "Alertes de zone", to: "/dashboard/alertes", icon: Bell },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
