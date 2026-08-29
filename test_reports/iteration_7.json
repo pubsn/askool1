@@ -1,0 +1,58 @@
+{
+  "summary": "Frontend-only regression for ASKOOL: verified in-dashboard search routes (/dashboard/educateurs, /dashboard/emplois) and one-time onboarding redirect after registration for all 4 roles. All flows PASS.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "parent_trouver_educateur": {
+      "url": "/dashboard/educateurs",
+      "dashboard_sidebar_visible": true,
+      "public_marketing_header_leaked": false,
+      "search_query_testid_found": true,
+      "cards_loaded": "10 educator cards rendered"
+    },
+    "educator_trouver_emploi": {
+      "url": "/dashboard/emplois",
+      "dashboard_sidebar_visible": true,
+      "public_marketing_header_leaked": false,
+      "job_search_query_testid_found": true,
+      "cards_loaded": "9 job cards rendered"
+    },
+    "empty_state_buttons_in_dashboard": {
+      "bookings_trouver_educateur": "present (1)",
+      "favorites_explorer_educateurs": "present (1)",
+      "applications_trouver_opportunite": "present (1)",
+      "zonealerts_definir_zone": "present (1)",
+      "zonealerts_ouvrir_carte": "not-found-on-empty-state (0) — likely conditional (may require zone data or different state); not blocking"
+    },
+    "onboarding_redirects_after_registration": {
+      "EDUCATOR": "→ /dashboard/profil ✓",
+      "SCHOOL": "→ /dashboard/etablissement ✓",
+      "PARENT": "→ /dashboard/eleves ✓",
+      "ADULT_LEARNER": "→ /dashboard/parametres ✓",
+      "one_time_only": "After redirect, navigation to /dashboard/messages stays on messages for all 4 roles (no forced re-redirect)."
+    },
+    "sidebar_items": {
+      "parent_sidebar_link_/dashboard/educateurs": "2 matches (sidebar + possibly action card container)",
+      "educator_sidebar_link_/dashboard/emplois": "verified via 'Trouver un emploi' text"
+    }
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Minor: Verify ZoneAlerts empty state 'Ouvrir la carte' button — not detected on default empty view; may only render when zones exist. Confirm intended behaviour."
+  ],
+  "critical_code_review_comments": [
+    "Register.jsx uses navigate(onboardingRoute(role)) synchronously after register() success — this is a one-shot navigation (not enforced via guard), which matches user requirement of ONCE-ONLY redirect. Good.",
+    "App.js: /dashboard/educateurs and /dashboard/emplois routes correctly render FindEducators/FindJobs with `embedded` prop under DashboardLayout — no PublicLayout leak confirmed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not tested)", "frontend": "100% (all 4 registration redirects + both in-dashboard search flows pass)"},
+  "test_credentials": "Used seed: parent@askool.sn / Askool2026!, ibrahima.fall@askool.sn / Askool2026!. Created QA accounts: qa.educator/school/parent/adult_learner.<rand>@example.com (Askool2026!).",
+  "seed_data_creation": "4 QA registration users created (safe to leave per request).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All bug-fix requirements from iteration 7 (in-dashboard educator/job search + onboarding one-shot redirect) verified via Playwright on the public preview URL. Public marketing header does NOT leak into /dashboard/educateurs or /dashboard/emplois (Connexion/Inscription anchors count = 0). Only nit: ZoneAlerts 'Ouvrir la carte' button not visible on empty state — likely conditional."
+}

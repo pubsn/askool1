@@ -21,7 +21,7 @@ export default function Favorites() {
     <div>
       <PageHeader title="Mes favoris" subtitle="Retrouvez les éducateurs que vous avez sauvegardés." />
       {educators.length === 0 ? (
-        <EmptyState icon={Heart} title="Aucun favori" description="Ajoutez des éducateurs à vos favoris depuis leur profil." action={<Button onClick={() => navigate("/educateurs")} className="rounded-xl bg-askool-blue text-white">Explorer les éducateurs</Button>} />
+        <EmptyState icon={Heart} title="Aucun favori" description="Ajoutez des éducateurs à vos favoris depuis leur profil." action={<Button onClick={() => navigate("/dashboard/educateurs")} className="rounded-xl bg-askool-blue text-white">Explorer les éducateurs</Button>} />
       ) : (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{educators.map((e) => <EducatorCard key={e.user_id} edu={e} />)}</div>
       )}

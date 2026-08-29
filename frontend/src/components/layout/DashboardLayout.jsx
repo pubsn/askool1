@@ -14,6 +14,7 @@ const MENUS = {
   EDUCATOR: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mon profil", to: "/dashboard/profil", icon: User },
+    { label: "Trouver un emploi", to: "/dashboard/emplois", icon: Search },
     { label: "Mes candidatures", to: "/dashboard/candidatures", icon: FileText },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
@@ -37,6 +38,7 @@ const MENUS = {
   ],
   PARENT: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
+    { label: "Trouver un éducateur", to: "/dashboard/educateurs", icon: Search },
     { label: "Mes élèves", to: "/dashboard/eleves", icon: Users },
     { label: "Mes demandes", to: "/dashboard/demandes", icon: FileText },
     { label: "Alertes de zone", to: "/dashboard/alertes", icon: Bell },
@@ -48,6 +50,7 @@ const MENUS = {
   ],
   ADULT_LEARNER: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
+    { label: "Trouver un éducateur", to: "/dashboard/educateurs", icon: Search },
     { label: "Mes demandes", to: "/dashboard/demandes", icon: FileText },
     { label: "Alertes de zone", to: "/dashboard/alertes", icon: Bell },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },

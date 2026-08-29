@@ -17,10 +17,10 @@ export default function ZoneAlerts() {
   return (
     <div>
       <PageHeader title="Mes alertes de zone" subtitle="Soyez notifié dès qu'un éducateur correspondant rejoint votre secteur."
-        action={<Button data-testid="goto-map-alert" onClick={() => navigate("/educateurs")} className="rounded-xl bg-askool-blue text-white hover:bg-askool-bluehover"><Search size={16} /> Définir une zone</Button>} />
+        action={<Button data-testid="goto-map-alert" onClick={() => navigate("/dashboard/educateurs")} className="rounded-xl bg-askool-blue text-white hover:bg-askool-bluehover"><Search size={16} /> Définir une zone</Button>} />
       {rows.length === 0 ? (
         <EmptyState icon={Bell} title="Aucune alerte de zone" description="Depuis la carte des éducateurs, choisissez un point et un rayon, puis cliquez sur « M'alerter »."
-          action={<Button onClick={() => navigate("/educateurs")} className="rounded-xl bg-askool-blue text-white">Ouvrir la carte</Button>} />
+          action={<Button onClick={() => navigate("/dashboard/educateurs")} className="rounded-xl bg-askool-blue text-white">Ouvrir la carte</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((a) => (

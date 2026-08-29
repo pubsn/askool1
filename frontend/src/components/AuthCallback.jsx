@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { onboardingRoute } from "@/lib/onboarding";
 import { Loader } from "@/components/common";
 
 export default function AuthCallback() {
@@ -21,8 +22,11 @@ export default function AuthCallback() {
       try {
         const { data } = await api.post("/auth/session", { session_id: sid, role });
         setUser(data.user);
-        window.history.replaceState(null, "", "/dashboard");
-        navigate("/dashboard", { replace: true, state: { user: data.user } });
+        // Redirection unique vers le formulaire d'onboarding si l'utilisateur vient de s'inscrire (rôle stocké au signup).
+        const dest = role ? onboardingRoute(data.user?.role || role) : "/dashboard";
+        sessionStorage.removeItem("askool_signup_role");
+        window.history.replaceState(null, "", dest);
+        navigate(dest, { replace: true, state: { user: data.user } });
       } catch {
         navigate("/connexion");
       }

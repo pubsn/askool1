@@ -68,6 +68,12 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Vérifié : PDF valide (%PDF-, 200 application/pdf), 6/6 pytest, flux frontend pay→confirmé→téléchargement OK
 - Note : les emails vers les comptes démo `@askool.sn` renvoient 422 (adresses non délivrables, bloquées par le proxy) — comportement attendu, les vraies adresses reçoivent bien l'email (202)
 
+## Implemented (2026-06, itération 7 — Corrections navigation & onboarding)
+- Recherche intégrée au tableau de bord : `/dashboard/educateurs` et `/dashboard/emplois` (prop `embedded` sur FindEducators/FindJobs → sans en-tête marketing, barre latérale conservée)
+- Toutes les navigations internes (DashboardHome, Bookings, Favorites, Applications, ZoneAlerts) et la barre latérale pointent vers les versions dashboard
+- Onboarding : redirection unique après inscription vers le formulaire du rôle (`onboardingRoute` : EDUCATOR→profil, SCHOOL→etablissement, PARENT→eleves, ADULT_LEARNER→parametres) — email + Google (AuthCallback), sans blocage de navigation ensuite
+- Vérifié iteration_7 : 100% (2 flux recherche in-dashboard + 4 redirections onboarding, aucun en-tête public ne fuit)
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

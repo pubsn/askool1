@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 
-export default function FindJobs() {
+export default function FindJobs({ embedded = false }) {
   const [meta, setMeta] = useState({ subjects: [], levels: [], regions: [], contract_types: [] });
   const [data, setData] = useState({ results: [], total: 0 });
   const [loading, setLoading] = useState(true);
@@ -31,9 +31,9 @@ export default function FindJobs() {
     </div>
   );
 
-  return (
-    <PublicLayout>
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+  const body = (
+    <>
+      <div className={embedded ? "" : "mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"}>
         <h1 className="font-display text-3xl font-bold text-gray-900 lg:text-4xl">Trouver un emploi</h1>
         <p className="mt-2 text-muted-foreground">{data.total} offre(s) d'emploi dans l'éducation au Sénégal.</p>
         <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
@@ -53,6 +53,7 @@ export default function FindJobs() {
           )}
         </div>
       </div>
-    </PublicLayout>
+    </>
   );
+  return embedded ? body : <PublicLayout>{body}</PublicLayout>;
 }
