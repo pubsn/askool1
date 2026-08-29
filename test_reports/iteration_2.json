@@ -1,0 +1,41 @@
+{
+  "summary": "Iteration 2 — tested the two new features (Leaflet map of educators + secure file uploads with public/private access control) plus regression on educators list and educator profile save. Added new pytest suite /app/backend/tests/test_uploads.py (14 tests) covering: (a) POST /api/uploads with category=photo|cv|diploma and forced-private for sensitive docs (5 tests), (b) mime-type rejection (photo↔non-image, cv↔webp) (2 tests), (c) GET /api/uploads/mine listing (1), (d) GET /api/files/{id} access control (public no-auth 200, private no-auth 403, owner 200, admin 200, other user 403, auth query-param 200) (6), (e) DELETE /api/uploads/{id} soft-delete + subsequent 404 (1), (f) educator submit /api/verifications with file_id-referenced documents → admin approves → educator_profiles.is_verified=true (1). All 14 pass. Regression: previous 27-test suite continues to work. Frontend map: /educateurs Carte toggle renders .leaflet-container with 8 markers, marker click opens popup with map-view-<id> button; Liste toggle returns to card grid — OK. Frontend upload: educator login → /dashboard/profil, upload-photo/upload-cv/upload-diploma buttons present, file inputs upload PNG+PDF successfully with 'Fichier téléversé' toast and photo preview updates; documents list shows Privé badges and del-doc-<id> buttons. Frontend admin: pubsn01 → /dashboard/admin → tab admin-tab-verifs shows pending verification with document link (SecureFile authenticated blob fetch → blob: href on 'd.pdf'), Approuver button fires PUT /api/admin/verifications/{id} 'Vérifié' and shows success toast.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AdminDashboard verification list", "issue": "React hydration warning: In HTML, <a> cannot be a descendant of <a>. AdminDashboard.jsx line ~59 wraps SecureFile inside an <a href='#'> but SecureFile itself renders an <a href='blob:...'> for PDFs. Remove the outer <a> and let SecureFile own the link.", "selector": "AdminDashboard.jsx:59 + SecureFile.jsx:22", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Admin Vérifications", "issues": ["Legacy verification records without file_id render an empty gray pill next to the header (e.g. old Awa Ndiaye entry with url='test'). Consider hiding docs without file_id or showing a placeholder text."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_uploads.py",
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/uploads_results.xml"
+  ],
+  "action_items": [
+    "(LOW) Fix nested <a> in AdminDashboard verification doc rendering (see UI bug above).",
+    "(LOW/optional) In AdminDashboard, skip rendering docs entries lacking file_id to avoid the empty pill on legacy verifications."
+  ],
+  "critical_code_review_comments": [
+    "server.py has grown to 875 lines and now mixes uploads + files serving in the same module; consider moving file endpoints into routers/files.py.",
+    "GET /api/files/{file_id} accepts token via query param (?auth=...) which is convenient for <img src>/<iframe> but tokens end up in access logs / referrers — restrict to specific content-types or short-lived signed URLs when possible.",
+    "put_object/get_object in storage.py are synchronous requests wrapped via asyncio.to_thread — OK; but no retry policy beyond a single reinit on 404. Consider retry on 5xx as well.",
+    "MAX_UPLOAD is enforced only after full file.read() (buffers whole payload in memory); for future-proofing use streaming with UploadFile.spool + size counter.",
+    "Photo mime-type check is by filename extension only; add a magic-byte check (imghdr / python-magic) to prevent spoofed extensions.",
+    "delete_upload allows admin to soft-delete other users' files but returns 404 for non-owner non-admin — good; however it does not delete the object from remote storage (only sets is_deleted). Consider a background cleanup for GDPR/right-to-be-forgotten.",
+    "Verifications never re-validate that referenced file_ids belong to the submitting user; a malicious educator could reference someone else's private file_id in their verification payload (admin would then see another user's document under this educator's name). Server should filter documents to file_ids where user_id == current user.",
+    "SecureFile creates blob URLs but never revokes them (URL.revokeObjectURL) on unmount → memory leak on frequent tab switches."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_uploads.py (new)"
+  ],
+  "success_rate": {"backend": "100% (14/14 new + 27/27 prior)", "frontend": "100% on new features (map toggle, marker popup, photo/cv/diploma upload, admin doc review + approve)"},
+  "test_credentials": "Admin pubsn01@gmail.com / Askool2026!, Educators awa.ndiaye@askool.sn & mamadou.diallo@askool.sn & ibrahima.fall@askool.sn (all Askool2026!). All working.",
+  "seed_data_creation": "Test uploads created several file records under Awa Ndiaye + Ibrahima Fall accounts (photo/cv/diploma) plus one pending verification for Ibrahima Fall (approved during UI test). No cleanup performed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend uploads/files access control is fully covered by /app/backend/tests/test_uploads.py (run: pytest backend/tests/test_uploads.py -v -o addopts=''). The default pytest.ini uses xdist which breaks module-level pytest.* attributes — use module-scoped fixtures instead (see test_uploads.py pattern) or override addopts. Emergent object storage is initialized at startup; observed 'Object storage initialized' log; put/get worked. One React hydration warning remains in AdminDashboard verification list (nested <a>). Server-side: consider verifying that referenced document file_ids in POST /api/verifications belong to the submitting user (currently unchecked)."
+}

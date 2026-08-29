@@ -1,8 +1,9 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query, UploadFile, File, Header, Response, Request
 from dotenv import load_dotenv
 from pathlib import Path
 import os
 import uuid
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional, List
@@ -19,6 +20,9 @@ from auth import get_current_user, require_roles
 from constants import (SUBJECTS, LEVELS, SERVICE_TYPES, REGIONS, LANGUAGES,
                        CONTRACT_TYPES, DIPLOMAS)
 from seed_data import seed_demo_data
+from storage import put_object, get_object, init_storage, APP_NAME, MIME_TYPES
+import jwt as _jwt
+from auth import _secret, JWT_ALGORITHM
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -619,8 +623,15 @@ class VerificationBody(BaseModel):
 
 @api.post("/verifications")
 async def submit_verification(body: VerificationBody, user: dict = Depends(get_current_user)):
+    # Only accept document references that actually belong to the submitting user
+    requested_ids = [d.get("file_id") for d in body.documents if d.get("file_id")]
+    owned = set()
+    if requested_ids:
+        cursor = db.files.find({"file_id": {"$in": requested_ids}, "user_id": user["user_id"], "is_deleted": False}, {"_id": 0, "file_id": 1})
+        owned = {f["file_id"] async for f in cursor}
+    safe_docs = [d for d in body.documents if d.get("file_id") in owned]
     doc = {"verification_id": new_id("verif"), "user_id": user["user_id"], "user_name": user.get("name"),
-           "documents": body.documents, "status": "En cours de vérification", "created_at": now_iso()}
+           "documents": safe_docs, "status": "En cours de vérification", "created_at": now_iso()}
     await db.verifications.insert_one(doc)
     await db.educator_profiles.update_one({"user_id": user["user_id"]},
                                           {"$set": {"verification_status": "En cours de vérification"}})
@@ -716,6 +727,92 @@ async def admin_update_plans(body: PlansBody, user: dict = Depends(require_roles
     return {"message": "Tarifs mis à jour"}
 
 
+# ================= uploads / files =================
+MAX_UPLOAD = 8 * 1024 * 1024  # 8 MB
+
+
+@api.post("/uploads")
+async def upload_file(file: UploadFile = File(...), category: str = "photo",
+                      visibility: str = "public", user: dict = Depends(get_current_user)):
+    ext = (file.filename.rsplit(".", 1)[-1] if "." in (file.filename or "") else "bin").lower()
+    if category == "photo" and ext not in ("jpg", "jpeg", "png", "webp"):
+        raise HTTPException(status_code=400, detail="Photo: formats acceptés jpg, png, webp")
+    if category in ("cv", "diploma") and ext not in ("pdf", "jpg", "jpeg", "png"):
+        raise HTTPException(status_code=400, detail="Document: formats acceptés pdf, jpg, png")
+    data = await file.read()
+    if len(data) > MAX_UPLOAD:
+        raise HTTPException(status_code=400, detail="Fichier trop volumineux (max 8 Mo)")
+    # sensitive documents are always private
+    vis = "private" if category in ("cv", "diploma") else (visibility if visibility in ("public", "private") else "public")
+    file_id = new_id("file")
+    content_type = MIME_TYPES.get(ext, file.content_type or "application/octet-stream")
+    path = f"{APP_NAME}/uploads/{user['user_id']}/{file_id}.{ext}"
+    try:
+        result = await asyncio.to_thread(put_object, path, data, content_type)
+    except Exception as e:
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=502, detail="Échec du téléversement")
+    doc = {"file_id": file_id, "user_id": user["user_id"], "storage_path": result["path"],
+           "original_filename": file.filename, "content_type": content_type, "size": result.get("size", len(data)),
+           "category": category, "visibility": vis, "is_deleted": False, "created_at": now_iso()}
+    await db.files.insert_one(doc)
+    return {"file": {k: v for k, v in doc.items() if k != "_id"}, "url": f"/api/files/{file_id}"}
+
+
+@api.get("/uploads/mine")
+async def my_uploads(category: Optional[str] = None, user: dict = Depends(get_current_user)):
+    q = {"user_id": user["user_id"], "is_deleted": False}
+    if category:
+        q["category"] = category
+    docs = await db.files.find(q, {"_id": 0}).sort("created_at", -1).to_list(200)
+    return {"results": docs}
+
+
+@api.delete("/uploads/{file_id}")
+async def delete_upload(file_id: str, user: dict = Depends(get_current_user)):
+    rec = await db.files.find_one({"file_id": file_id}, {"_id": 0})
+    if not rec or (rec["user_id"] != user["user_id"] and user["role"] != "ADMIN"):
+        raise HTTPException(status_code=404, detail="Fichier introuvable")
+    await db.files.update_one({"file_id": file_id}, {"$set": {"is_deleted": True}})
+    return {"message": "Fichier supprimé"}
+
+
+def _user_from_token(token: Optional[str]) -> Optional[dict]:
+    if not token:
+        return None
+    try:
+        payload = _jwt.decode(token, _secret(), algorithms=[JWT_ALGORITHM])
+        return {"user_id": payload.get("sub")}
+    except Exception:
+        return None
+
+
+@api.get("/files/{file_id}")
+async def serve_file(file_id: str, request: Request = None, authorization: str = Header(None), auth: str = Query(None)):
+    rec = await db.files.find_one({"file_id": file_id, "is_deleted": False}, {"_id": 0})
+    if not rec:
+        raise HTTPException(status_code=404, detail="Fichier introuvable")
+    if rec["visibility"] == "private":
+        token = auth
+        if not token and authorization and authorization.startswith("Bearer "):
+            token = authorization[7:]
+        if not token:
+            token = request.cookies.get("access_token") if request else None
+        u = _user_from_token(token)
+        admin = False
+        if u:
+            full = await db.users.find_one({"user_id": u["user_id"]}, {"_id": 0})
+            admin = full and full.get("role") == "ADMIN"
+        if not u or (u["user_id"] != rec["user_id"] and not admin):
+            raise HTTPException(status_code=403, detail="Accès refusé à ce document privé")
+    try:
+        data, ct = await asyncio.to_thread(get_object, rec["storage_path"])
+    except Exception as e:
+        logger.error(f"Serve file failed: {e}")
+        raise HTTPException(status_code=404, detail="Fichier indisponible")
+    return Response(content=data, media_type=rec.get("content_type", ct))
+
+
 # ================= account =================
 @api.delete("/account")
 async def delete_account(user: dict = Depends(get_current_user)):
@@ -771,6 +868,11 @@ async def startup():
     await db.login_attempts.create_index("email")
     await auth.seed_admin()
     await seed_demo_data()
+    try:
+        await asyncio.to_thread(init_storage)
+        logger.info("Object storage initialized")
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
     logger.info("ASKOOL API started")
 
 

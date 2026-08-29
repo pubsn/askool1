@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, MapPin, List, Map as MapIcon, X } from "lucide-react";
 import PublicLayout from "@/components/layout/PublicLayout";
 import EducatorCard from "@/components/EducatorCard";
+import EducatorMap from "@/components/EducatorMap";
 import { Loader, EmptyState } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,19 +102,7 @@ export default function FindEducators() {
             {loading ? <Loader /> : data.results.length === 0 ? (
               <EmptyState title="Aucun éducateur trouvé" description="Essayez d'élargir vos critères de recherche." action={<Button onClick={reset} className="rounded-xl bg-askool-blue text-white">Réinitialiser</Button>} />
             ) : view === "map" ? (
-              <div className="overflow-hidden rounded-2xl border border-gray-100">
-                <div className="relative h-[420px] w-full bg-askool-bluelight">
-                  <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?w=1200&q=60" alt="Carte" className="h-full w-full object-cover opacity-40" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
-                    {data.results.slice(0, 6).map((e, i) => (
-                      <span key={e.user_id} className="flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-medium text-askool-blue shadow" style={{ position: "absolute", left: `${15 + (i * 13) % 70}%`, top: `${20 + (i * 17) % 60}%` }}>
-                        <MapPin size={12} /> {e.name.split(" ")[0]} · {(e.hourly_rate || 0).toLocaleString()}F
-                      </span>
-                    ))}
-                    <p className="rounded-lg bg-white/90 px-4 py-2 text-sm text-gray-600">Vue carte — {data.total} éducateurs localisés</p>
-                  </div>
-                </div>
-              </div>
+              <EducatorMap educators={data.results} />
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {data.results.map((e) => <EducatorCard key={e.user_id} edu={e} />)}
