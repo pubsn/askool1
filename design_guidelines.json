@@ -1,0 +1,172 @@
+{
+  "design_philosophy": {
+    "identity": "Warm & Human, modern, and technological. The platform must avoid looking cold, sterile, or overly institutional.",
+    "core_attributes": [
+      "Trust",
+      "Professionalism",
+      "Simplicity",
+      "Accessibility",
+      "Proximity",
+      "Security"
+    ],
+    "positioning": "La plateforme qui connecte les talents éducatifs aux écoles et aux apprenants.",
+    "hero_title": "Trouvez le bon éducateur. Trouvez la bonne opportunité.",
+    "market": "Senegal"
+  },
+  "colors": {
+    "primary": {
+      "blue": "#2a4898",
+      "blue_hover": "#203a7a",
+      "blue_light": "#eef2fb"
+    },
+    "accent": {
+      "orange": "#F8BF0E",
+      "orange_hover": "#e0ab0c",
+      "orange_light": "#fff9e6"
+    },
+    "background": {
+      "default": "#FDFBF7",
+      "surface": "#FFFFFF",
+      "subtle": "#F3F4F6"
+    },
+    "text": {
+      "primary": "#111827",
+      "secondary": "#4B5563",
+      "muted": "#9CA3AF"
+    },
+    "status": {
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444"
+    },
+    "rules": [
+      "Use Blue (#2a4898) for primary trust actions, headers, and major structural elements.",
+      "Use Orange (#F8BF0E) for high-energy accents, highlights, primary conversion CTAs, and Premium/Family Pass badges.",
+      "Never use pure black or pure white for backgrounds. Always use the slightly warm #FDFBF7 for the main app background to reinforce the 'Warm & Human' feel.",
+      "Ensure sufficient contrast for accessibility (WCAG AA). If placing white text on the orange button, check contrast or use a very dark blue/black text on the orange CTA for readability."
+    ]
+  },
+  "typography": {
+    "headings": {
+      "family": "Poppins",
+      "weights": ["600", "700", "800"],
+      "usage": "All titles, H1-H6, hero texts, and card titles.",
+      "tracking": "tracking-tight"
+    },
+    "body": {
+      "family": "Figtree, sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "Highly legible for all body text, paragraphs, labels, and UI text.",
+      "tracking": "tracking-normal"
+    },
+    "scales": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-semibold leading-snug",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "body_large": "text-lg",
+      "body_base": "text-base",
+      "small": "text-sm",
+      "tiny": "text-xs uppercase tracking-[0.1em]"
+    },
+    "rules": [
+      "Do NOT use Inter for headings.",
+      "Use 'Poppins' exclusively for large display text and section titles.",
+      "Ensure all text has minimum 4.5:1 contrast ratio against its background."
+    ]
+  },
+  "spacing_and_layout": {
+    "general": {
+      "philosophy": "Generous Spacing (p-6, p-8) to ensure the platform feels accessible, breathable, and simple.",
+      "card_padding": "p-6 md:p-8",
+      "section_spacing": "py-16 md:py-24 lg:py-32"
+    },
+    "landing_page": {
+      "grid_mode": "The 'Tetris' Grid (Asymmetrical and engaging) or 'Swiss' inspired clean sections with overlapping elements.",
+      "hero_composition": "Massive H1 (Poppins), engaging Subtitle, overlapping embedded search bar with filters (Subject, Level, Location, Type) floating over or right below the text, alongside warm human photography.",
+      "features_section": "Bento grid with generous white space and subtle orange/blue accent borders."
+    },
+    "dashboards": {
+      "grid_mode": "High Density Grid for functionality, but retaining soft radii.",
+      "navigation": "Responsive: Mobile-first bottom navigation + hamburger menu for secondary items. Side navigation for Desktop.",
+      "content_area": "Max-w-7xl centered, p-4 sm:p-6 lg:p-8.",
+      "alignment": "Optical alignment over geometrical. Left-align dense data, tables, and forms."
+    },
+    "radii": {
+      "cards": "rounded-2xl",
+      "buttons": "rounded-full or rounded-xl (slightly rounded as requested)",
+      "inputs": "rounded-lg"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#2a4898] text-white hover:bg-[#203a7a] transition-colors rounded-xl px-6 py-3 font-medium",
+      "accent": "bg-[#F8BF0E] text-[#111827] hover:bg-[#e0ab0c] transition-colors rounded-xl px-6 py-3 font-semibold",
+      "outline": "border-2 border-[#2a4898] text-[#2a4898] hover:bg-[#eef2fb] rounded-xl px-6 py-3 font-medium"
+    },
+    "cards": {
+      "style": "bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-2xl p-6",
+      "educator_card": "Includes educator photo, verified badge, rating (stars), subjects/levels tags, and 'Book' CTA."
+    },
+    "inputs": {
+      "style": "bg-gray-50 border border-gray-200 focus:border-[#2a4898] focus:ring-2 focus:ring-[#2a4898]/20 rounded-lg p-3 w-full transition-all"
+    },
+    "badges": {
+      "premium": "bg-gradient-to-r from-[#F8BF0E] to-[#e0ab0c] text-black text-xs font-bold px-2 py-1 rounded-md uppercase",
+      "verified": "bg-[#10B981]/10 text-[#10B981] flex items-center gap-1 text-xs px-2 py-1 rounded-md",
+      "match_score": "bg-[#2a4898]/10 text-[#2a4898] font-bold px-3 py-1 rounded-full text-sm (e.g., '92% Compatible')"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "Simple, clean line icons, primarily in the #2a4898 (blue) or #4B5563 (slate) color."
+    },
+    "testing": {
+      "rule": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='hero-search-button')."
+    }
+  },
+  "motion": {
+    "philosophy": "Discreet micro-interactions and light animations.",
+    "hover_states": "-translate-y-1 transform transition-all duration-300 ease-out on cards. Scale 1.02 on primary buttons.",
+    "page_transitions": "Subtle fade-in (opacity 0 to 1) for dashboard views.",
+    "libraries": "framer-motion for React components."
+  },
+  "media": {
+    "image_urls": {
+      "hero_main": {
+        "url": "https://images.unsplash.com/photo-1567057419565-4349c49d8a04?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwzfHxhZnJpY2FuJTIwc3R1ZGVudHMlMjBzbWlsaW5nfGVufDB8fHx8MTc4ODAwNjM2MHww&ixlib=rb-4.1.0&q=85",
+        "description": "Group of joyful African children. Perfect for the hero section or 'Parents/Learners' section to evoke warmth and accessibility."
+      },
+      "educator_profile_1": {
+        "url": "https://images.unsplash.com/photo-1604933762021-54a5858c9832?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwyfHxhZnJpY2FuJTIwcHJvZmVzc2lvbmFsJTIwd29ya2luZyUyMGxhcHRvcHxlbnwwfHx8fDE3ODgwMDYzNjR8MA&ixlib=rb-4.1.0&q=85",
+        "description": "African woman working on laptop. Excellent for representing an adult learner, a private tutor, or school administrator."
+      },
+      "educator_profile_2": {
+        "url": "https://images.unsplash.com/photo-1744809482817-9a9d4fc280af?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwdGVhY2hlciUyMGNsYXNzcm9vbXxlbnwwfHx8fDE3ODgwMDYzNTZ8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Teacher actively instructing in front of a class. Perfect for the 'Schools' journey or 'CV Library' marketing."
+      },
+      "students_warm": {
+        "url": "https://images.unsplash.com/photo-1548102245-c79dbcfa9f92?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHw0fHxhZnJpY2FuJTIwc3R1ZGVudHMlMjBzbWlsaW5nfGVufDB8fHx8MTc4ODAwNjM2MHww&ixlib=rb-4.1.0&q=85",
+        "description": "Two African boys smiling. Represents the Family Pass, private tutoring success, and proximity."
+      }
+    },
+    "style": "Photos must depict the Senegalese/African context. Focus on warmth, smiles, and professional/educational settings. Avoid clinical or overly corporate imagery."
+  },
+  "instructions_to_main_agent": [
+    "Build a robust layout using pure HTML/Tailwind for marketing pages and Shadcn components for complex dashboard logic.",
+    "Implement a theme provider to ensure background is #FDFBF7 by default.",
+    "Install Google Fonts 'Poppins' and 'Figtree'. Ensure Poppins is used exclusively for H1-H6.",
+    "Create the embedded search component immediately below the Hero Text. It must include Subject, Level, Location, and Service Type dropdowns.",
+    "For the dashboards, ensure the navigation shifts from a side-nav (desktop) to a bottom-nav + hamburger menu (mobile).",
+    "Use lucide-react for all iconography to maintain simple, modern visuals.",
+    "Ensure the match compatibility score ('92% compatible') is visually prominent on tutor profile cards.",
+    "Add 'data-testid' to ALL buttons, inputs, links, and forms."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": {
+    "avoid_slop": "Do not make generic centered layouts. Use asymmetrical grids (Bento) for marketing. Create depth through layered design elements and subtle shadows.",
+    "spacing": "Use 2x more spacing than feels comfortable. Cramped designs look cheap.",
+    "motion": "Every interaction needs micro-animations (hover states, subtle entrance fades). Static = dead.",
+    "component_reuse": "Prioritize reusing Shadcn components from src/components/ui.",
+    "toasts": "Use 'sonner' for toasts.",
+    "testing": "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing.",
+    "css_rule": "NEVER apply 'transition: all' globally. NEVER center align the main App container globally."
+  }
+}

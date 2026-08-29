@@ -1,0 +1,45 @@
+{
+  "summary": "First test run of ASKOOL MVP. Wrote a pytest suite with 27 backend test cases covering public meta/educators/jobs, auth (admin login, register educator/parent/school, me, forgot, logout), RBAC (educator can't POST /jobs, school can't POST /applications, non-admin can't GET /admin/stats, unauth /auth/me), educator flow (profile upsert + get + apply + status transitions + duplicate protection), school flow (schools/me, jobs, applications received), parent flow (students, tutoring-requests + matches with match_score/reasons), bookings, reviews (rating aggregate updates educator profile), favorites toggle, messaging (create conv + list + read messages), notifications (list + unread + mark read), verification (submit + admin approve sets is_verified true), admin stats/users, subscriptions (returns pending_payment mobile_money). All 27 backend tests PASS. Also ran Playwright UI tests: Landing loads, /educateurs shows 8 seeded educator cards, Voir le profil opens detail with Contacter + Demander un cours buttons, /emplois shows 7 jobs with data-testid job-card-* and view-job-*, admin login lands on /dashboard with Vue générale (17 users, 4 schools, 9 educators, 3 parents/apprenants), new educator registration via /inscription lands on /dashboard, 6 side-nav items open without JS errors.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/register + /api/auth/forgot-password", "issue": "pydantic EmailStr rejects .test TLD (reserved). Real emails work; only affects tests using synthetic domains. Not a code bug."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Landing / all pages", "issues": ["Multiple 401 console errors on public pages caused by /api/auth/me being called with no token; consider suppressing 401 log or gating call on presence of cookie/token to reduce console noise."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "(optional) Suppress /api/auth/me 401 console errors on public pages by not calling it unless a session hint exists (localStorage flag or cookie presence).",
+    "(optional) Educator detail page views counter increments per public GET — consider debouncing to avoid inflated views from bots/reloads."
+  ],
+  "critical_code_review_comments": [
+    "server.py is 776 lines mixing all domains; consider splitting into routers (educators.py, schools.py, jobs.py, applications.py, etc.) once feature-complete.",
+    "CORS middleware is added AFTER app.include_router() — works in FastAPI because middlewares are stacked at startup, but adding it before include_router is conventional and less error-prone.",
+    "verify_password uses bcrypt.checkpw with silent Exception→False; ok, but log the exception for observability of malformed hashes.",
+    "brute-force lockout keyed on ip:email uses request.client.host which is the proxy IP in K8s ingress; consider X-Forwarded-For handling so lockout is per real client.",
+    "In educator_public/other endpoints, _id is excluded ({'_id': 0}) — good. Confirmed no ObjectId leaks in tested responses.",
+    "notify() writes read=False notifications synchronously per action — fine at MVP scale; move to background_task if volume grows.",
+    "Duplicate-application check is by (offer_id, educator_user_id) at read time — could race under concurrent posts; add a compound unique index applications(offer_id, educator_user_id).",
+    "reviews.POST does not check that the author is not the educator themselves; add self-review protection.",
+    "bookings.PUT status accepts any string; consider whitelist of statuses (Confirmé/Refusé/Terminé/Annulé) like APP_STATUSES.",
+    "subscriptions marks is_premium=True on plan 'Premium/Pro' as soon as record is created with status pending_payment; premium should be granted only after payment confirmation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py"
+  ],
+  "success_rate": {"backend": "100% (27/27)", "frontend": "100% (all UI flows exercised OK)"},
+  "test_credentials": "admin pubsn01@gmail.com / Askool2026! (works). Demo accounts awa.ndiaye/mamadou.diallo/ibrahima.fall/parent/apprenant/contact.groupe0 all with password Askool2026! (verified working).",
+  "seed_data_creation": "seed_demo_data() populated 8 educators + 3 schools + 7 job offers + 25 reviews on backend startup. Tests additionally created a TEST_OFFER_* offer via school flow and 1 application to it, plus one booking/review/favorite for parent flow.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend and frontend all functional. Full pytest suite at /app/backend/tests/backend_test.py — run with: pytest /app/backend/tests/backend_test.py -v. Use email domain askool.sn (not .test) for register tests because pydantic EmailStr blocks reserved TLDs. Google OAuth /api/auth/session not tested — requires real Emergent session. Email delivery via Resend not verified in preview (endpoints don't crash)."
+}
