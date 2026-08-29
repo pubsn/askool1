@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth, formatApiError } from "@/context/AuthContext";
-import { onboardingRoute } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 const ROLES = [
@@ -31,8 +30,8 @@ export default function Register() {
     setErr(""); setLoading(true);
     try {
       await register({ ...form, role });
-      toast.success("Compte créé ! Complétez votre profil pour commencer.");
-      navigate(onboardingRoute(role));
+      toast.success("Compte créé ! Bienvenue sur ASKOOL.");
+      navigate("/dashboard");
     } catch (e2) {
       setErr(formatApiError(e2.response?.data?.detail) || e2.message);
     } finally { setLoading(false); }

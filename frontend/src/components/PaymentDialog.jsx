@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, ShieldCheck, CheckCircle2, Download } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
 import api from "@/lib/api";
-import { downloadReceipt } from "@/lib/receipt";
 
 const PROVIDERS = [
   { id: "orange_money", label: "Orange Money", accent: "#ff6600", initials: "OM" },
@@ -15,15 +14,14 @@ const PROVIDERS = [
 
 // payload: { purpose: "subscription"|"booking", plan?, audience?, booking_id? }
 export const PaymentDialog = ({ open, onOpenChange, payload, amountLabel, onSuccess }) => {
-  const [step, setStep] = useState("select"); // select | confirm | done
+  const [step, setStep] = useState("select"); // select | confirm
   const [provider, setProvider] = useState(null);
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [payment, setPayment] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [doneId, setDoneId] = useState(null);
 
-  const reset = () => { setStep("select"); setProvider(null); setPhone(""); setCode(""); setPayment(null); setBusy(false); setDoneId(null); };
+  const reset = () => { setStep("select"); setProvider(null); setPhone(""); setCode(""); setPayment(null); setBusy(false); };
 
   const close = (v) => { if (!v) reset(); onOpenChange(v); };
 
@@ -47,17 +45,11 @@ export const PaymentDialog = ({ open, onOpenChange, payload, amountLabel, onSucc
     try {
       await api.post(`/payments/${payment.payment_id}/confirm`, { code });
       toast.success("Paiement confirmé avec succès !");
-      setDoneId(payment.payment_id);
-      setStep("done");
+      close(false);
       onSuccess?.();
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Code invalide");
     } finally { setBusy(false); }
-  };
-
-  const download = async () => {
-    try { await downloadReceipt(doneId); }
-    catch { toast.error("Reçu indisponible pour le moment"); }
   };
 
   const displayAmount = payment ? `${(payment.amount || 0).toLocaleString()} ${payment.currency || "FCFA"}` : amountLabel;
@@ -110,22 +102,6 @@ export const PaymentDialog = ({ open, onOpenChange, payload, amountLabel, onSucc
               {busy ? <Loader2 className="animate-spin" size={18} /> : "Confirmer le paiement"}
             </Button>
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground"><ShieldCheck size={13} /> Paiement sécurisé — mode démonstration</p>
-          </div>
-        )}
-
-        {step === "done" && (
-          <div className="space-y-5 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <CheckCircle2 size={56} className="text-emerald-500" />
-              <p className="font-display text-lg font-semibold text-gray-900">Paiement confirmé !</p>
-              <p className="text-sm text-muted-foreground">Un reçu a été envoyé à votre adresse email.</p>
-            </div>
-            <Button data-testid="pay-download-receipt-btn" onClick={download} variant="outline" className="w-full rounded-xl border-askool-blue text-askool-blue hover:bg-blue-50">
-              <Download size={16} className="mr-2" /> Télécharger le reçu (PDF)
-            </Button>
-            <Button data-testid="pay-done-close-btn" onClick={() => close(false)} className="w-full rounded-xl bg-askool-blue font-semibold text-white hover:bg-askool-bluehover">
-              Fermer
-            </Button>
           </div>
         )}
       </DialogContent>

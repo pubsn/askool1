@@ -39,7 +39,7 @@ export default function Applications() {
       <PageHeader title={isSchool ? "Candidatures reçues" : "Mes candidatures"} subtitle={isSchool ? "Gérez les candidatures et faites avancer vos recrutements." : "Suivez l'état de vos candidatures."} />
       {rows.length === 0 ? (
         <EmptyState icon={FileText} title={isSchool ? "Aucune candidature reçue" : "Tu n'as encore envoyé aucune candidature."} description={isSchool ? "Publiez des offres pour recevoir des candidatures." : "Trouve une opportunité qui te correspond."}
-          action={<Button data-testid="empty-cta" onClick={() => navigate(isSchool ? "/dashboard/publier" : "/dashboard/emplois")} className="rounded-xl bg-askool-blue text-white">{isSchool ? "Publier une offre" : "Trouver une opportunité"}</Button>} />
+          action={<Button data-testid="empty-cta" onClick={() => navigate(isSchool ? "/dashboard/publier" : "/emplois")} className="rounded-xl bg-askool-blue text-white">{isSchool ? "Publier une offre" : "Trouver une opportunité"}</Button>} />
       ) : (
         <div className="space-y-3">
           {rows.map((a) => (

@@ -31,7 +31,6 @@ import Bookings from "@/pages/dashboard/Bookings";
 import Favorites from "@/pages/dashboard/Favorites";
 import Reviews from "@/pages/dashboard/Reviews";
 import Subscription from "@/pages/dashboard/Subscription";
-import Payments from "@/pages/dashboard/Payments";
 import PublishJob from "@/pages/dashboard/PublishJob";
 import MyJobs from "@/pages/dashboard/MyJobs";
 import CVtheque from "@/pages/dashboard/CVtheque";
@@ -78,9 +77,6 @@ function AppRouter() {
         <Route path="favoris" element={<Favorites />} />
         <Route path="avis" element={<Reviews />} />
         <Route path="abonnement" element={<Subscription />} />
-        <Route path="paiements" element={<Payments />} />
-        <Route path="educateurs" element={<FindEducators embedded />} />
-        <Route path="emplois" element={<FindJobs embedded />} />
         <Route path="etablissement" element={<SchoolProfile />} />
         <Route path="publier" element={<PublishJob />} />
         <Route path="offres" element={<MyJobs />} />

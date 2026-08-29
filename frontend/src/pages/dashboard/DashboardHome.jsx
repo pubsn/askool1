@@ -50,7 +50,7 @@ function EducatorHome({ navigate, user }) {
         </>
       )}
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <ActionCard icon={Search} title="Trouver un emploi" onClick={() => navigate("/dashboard/emplois")} />
+        <ActionCard icon={Search} title="Trouver un emploi" onClick={() => navigate("/emplois")} />
         <ActionCard icon={FileText} title="Mes candidatures" onClick={() => navigate("/dashboard/candidatures")} />
         <ActionCard icon={CreditCard} title="Passer Premium" onClick={() => navigate("/dashboard/abonnement")} />
       </div>
@@ -99,7 +99,7 @@ function ParentHome({ navigate, user, role }) {
         <StatCard icon={Calendar} label="Cours à venir" value={bookings.filter((b) => b.status === "Confirmé").length} accent="green" testId="stat-upcoming" />
       </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <ActionCard icon={Search} title="Trouver un éducateur" onClick={() => navigate("/dashboard/educateurs")} />
+        <ActionCard icon={Search} title="Trouver un éducateur" onClick={() => navigate("/educateurs")} />
         {role === "PARENT" && <ActionCard icon={Users} title="Mes élèves" onClick={() => navigate("/dashboard/eleves")} />}
         <ActionCard icon={FileText} title="Mes demandes" onClick={() => navigate("/dashboard/demandes")} />
       </div>

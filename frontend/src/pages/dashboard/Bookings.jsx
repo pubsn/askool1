@@ -29,7 +29,7 @@ export default function Bookings() {
     <div>
       <PageHeader title="Mes réservations" subtitle="Gérez vos cours particuliers." />
       {rows.length === 0 ? (
-        <EmptyState icon={Calendar} title="Aucune réservation" description="Réservez un cours avec un éducateur." action={<Button onClick={() => navigate("/dashboard/educateurs")} className="rounded-xl bg-askool-blue text-white">Trouver un éducateur</Button>} />
+        <EmptyState icon={Calendar} title="Aucune réservation" description="Réservez un cours avec un éducateur." action={<Button onClick={() => navigate("/educateurs")} className="rounded-xl bg-askool-blue text-white">Trouver un éducateur</Button>} />
       ) : (
         <div className="space-y-3">
           {rows.map((b) => {
@@ -72,7 +72,7 @@ export default function Bookings() {
         onOpenChange={(v) => { if (!v) setPayBooking(null); }}
         payload={payBooking ? { purpose: "booking", booking_id: payBooking.booking_id, label: `Cours avec ${payBooking.educator_name}` } : null}
         amountLabel={payBooking ? `${(payBooking.price || 0).toLocaleString()} FCFA` : null}
-        onSuccess={() => { load(); }}
+        onSuccess={() => { setPayBooking(null); load(); }}
       />
     </div>
   );

@@ -60,19 +60,10 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Cron rappels de cours : `POST /api/cron/lesson-reminders` (auth Bearer WEBHOOK_CRON_SECRET, 401 sinon) + `/app/.emergent/crons.yml` (09h Dakar, notifie parent + éducateur la veille)
 - Vérifié iteration_6 : backend 6/6 pytest + flux frontend abonnement & réservation OK
 
-## Implemented (2026-06, itération 6 — Reçus de paiement)
-- Génération PDF du reçu (reportlab) : `GET /api/payments/{id}/receipt` (auth + propriété, PDF téléchargeable)
-- Reçu envoyé par email après confirmation (`send_payment_receipt_email`, HTML + lien de téléchargement ; le proxy email ne supporte pas les pièces jointes)
-- Étape « Paiement confirmé ! » dans `PaymentDialog` avec bouton « Télécharger le reçu (PDF) »
-- Nouvelle page « Mes paiements » (`/dashboard/paiements`) : historique + reçus téléchargeables (nav éducateur/école/parent/apprenant)
-- Vérifié : PDF valide (%PDF-, 200 application/pdf), 6/6 pytest, flux frontend pay→confirmé→téléchargement OK
-- Note : les emails vers les comptes démo `@askool.sn` renvoient 422 (adresses non délivrables, bloquées par le proxy) — comportement attendu, les vraies adresses reçoivent bien l'email (202)
-
-## Implemented (2026-06, itération 7 — Corrections navigation & onboarding)
-- Recherche intégrée au tableau de bord : `/dashboard/educateurs` et `/dashboard/emplois` (prop `embedded` sur FindEducators/FindJobs → sans en-tête marketing, barre latérale conservée)
-- Toutes les navigations internes (DashboardHome, Bookings, Favorites, Applications, ZoneAlerts) et la barre latérale pointent vers les versions dashboard
-- Onboarding : redirection unique après inscription vers le formulaire du rôle (`onboardingRoute` : EDUCATOR→profil, SCHOOL→etablissement, PARENT→eleves, ADULT_LEARNER→parametres) — email + Google (AuthCallback), sans blocage de navigation ensuite
-- Vérifié iteration_7 : 100% (2 flux recherche in-dashboard + 4 redirections onboarding, aucun en-tête public ne fuit)
+## Reverted (2026-06 — à la demande de l'utilisateur)
+- Les itérations 6 (Reçus de paiement PDF/email + page « Mes paiements ») et 7 (recherche intégrée au dashboard + redirection d'onboarding) ont été ANNULÉES à la demande de l'utilisateur.
+- État restauré : boutons « Trouver un éducateur/emploi » rouvrent les pages publiques `/educateurs` et `/emplois` ; après inscription → redirection directe vers `/dashboard` ; pas de reçus PDF ni de page paiements.
+- CONSERVÉ : le flux de paiement Mobile Money de base (`PaymentDialog` sélection opérateur → téléphone → code 4 chiffres) pour abonnements et réservations.
 
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage

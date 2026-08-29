@@ -21,7 +21,6 @@ from auth import get_current_user, require_roles
 from constants import (SUBJECTS, LEVELS, SERVICE_TYPES, REGIONS, LANGUAGES,
                        CONTRACT_TYPES, DIPLOMAS, REGION_COORDS, region_latlng)
 from seed_data import seed_demo_data
-from email_service import send_payment_receipt_email
 from storage import put_object, get_object, init_storage, APP_NAME, MIME_TYPES
 import jwt as _jwt
 from auth import _secret, JWT_ALGORITHM
@@ -932,103 +931,7 @@ async def confirm_payment(payment_id: str, body: PaymentConfirmBody, user: dict 
                          f"{user.get('name')} a payé le cours du {b['date']} à {b['time']}.", "/dashboard/reservations")
             await notify(user["user_id"], "booking", "Paiement confirmé",
                          f"Votre cours du {b['date']} est confirmé et payé.", "/dashboard/reservations")
-    # Reçu par email (le proxy email ne supporte pas les pièces jointes : on envoie
-    # le reçu en HTML + un lien de téléchargement du PDF côté application)
-    try:
-        rec = await db.payments.find_one({"payment_id": payment_id}, {"_id": 0})
-        base = os.environ.get("FRONTEND_URL", "").rstrip("/")
-        await send_payment_receipt_email(user.get("email"), user.get("name", ""), rec,
-                                         f"{base}/dashboard/paiements")
-    except Exception as e:
-        logger.error(f"Receipt email failed: {e}")
     return {"status": "success", "message": "Paiement confirmé avec succès"}
-
-
-def _build_receipt_pdf(pay: dict, buyer_name: str, buyer_email: str) -> bytes:
-    from io import BytesIO
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.lib import colors
-    from reportlab.pdfgen import canvas as _canvas
-
-    buf = BytesIO()
-    c = _canvas.Canvas(buf, pagesize=A4)
-    w, h = A4
-    blue = colors.HexColor("#2a4898")
-    orange = colors.HexColor("#F8BF0E")
-
-    c.setFillColor(blue)
-    c.rect(0, h - 40 * mm, w, 40 * mm, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 26)
-    c.drawString(20 * mm, h - 25 * mm, "ASKOOL")
-    c.setFont("Helvetica", 12)
-    c.drawString(20 * mm, h - 33 * mm, "Reçu de paiement")
-
-    c.setFillColor(colors.black)
-    y = h - 55 * mm
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(20 * mm, y, "Reçu N° " + str(pay.get("payment_id", "")))
-    y -= 8 * mm
-    c.setFont("Helvetica", 10)
-    c.setFillColor(colors.HexColor("#666666"))
-    c.drawString(20 * mm, y, "Date : " + str(pay.get("confirmed_at") or pay.get("created_at", "")))
-
-    def row(label, value, yy, bold=False):
-        c.setFillColor(colors.HexColor("#666666"))
-        c.setFont("Helvetica", 10)
-        c.drawString(20 * mm, yy, label)
-        c.setFillColor(colors.black)
-        c.setFont("Helvetica-Bold" if bold else "Helvetica", 12 if bold else 11)
-        c.drawRightString(w - 20 * mm, yy, str(value))
-
-    y -= 16 * mm
-    row("Client", buyer_name or buyer_email or "-", y)
-    y -= 9 * mm
-    row("Email", buyer_email or "-", y)
-    y -= 9 * mm
-    row("Description", pay.get("label", "-"), y)
-    y -= 9 * mm
-    row("Type", "Abonnement" if pay.get("purpose") == "subscription" else "Réservation de cours", y)
-    y -= 9 * mm
-    row("Moyen de paiement", pay.get("provider", "Mobile Money"), y)
-    y -= 9 * mm
-    row("Téléphone", pay.get("phone", "-"), y)
-    y -= 9 * mm
-    row("Statut", "Payé" if pay.get("status") == "success" else pay.get("status", "-"), y)
-
-    y -= 6 * mm
-    c.setStrokeColor(colors.HexColor("#e5e7eb"))
-    c.line(20 * mm, y, w - 20 * mm, y)
-    y -= 12 * mm
-    c.setFillColor(orange)
-    c.rect(20 * mm, y - 4 * mm, w - 40 * mm, 14 * mm, fill=1, stroke=0)
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(24 * mm, y + 1 * mm, "TOTAL PAYÉ")
-    c.drawRightString(w - 24 * mm, y + 1 * mm,
-                      f"{int(pay.get('amount', 0)):,}".replace(",", " ") + " " + pay.get("currency", "XOF"))
-
-    c.setFillColor(colors.HexColor("#999999"))
-    c.setFont("Helvetica", 8)
-    c.drawString(20 * mm, 20 * mm, "ASKOOL — Plateforme éducative du Sénégal. Ce reçu confirme votre paiement.")
-    if pay.get("mode") == "mock":
-        c.drawString(20 * mm, 16 * mm, "Mode démonstration — paiement simulé.")
-    c.showPage()
-    c.save()
-    return buf.getvalue()
-
-
-@api.get("/payments/{payment_id}/receipt")
-async def payment_receipt(payment_id: str, user: dict = Depends(get_current_user)):
-    pay = await db.payments.find_one({"payment_id": payment_id, "user_id": user["user_id"]}, {"_id": 0})
-    if not pay:
-        raise HTTPException(status_code=404, detail="Paiement introuvable")
-    if pay.get("status") != "success":
-        raise HTTPException(status_code=400, detail="Reçu disponible uniquement après confirmation du paiement")
-    data = _build_receipt_pdf(pay, user.get("name", ""), user.get("email", ""))
-    return Response(content=data, media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="recu-askool-{payment_id}.pdf"'})
 
 
 @api.get("/payments/mine")

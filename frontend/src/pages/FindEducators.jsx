@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 
-export default function FindEducators({ embedded = false }) {
+export default function FindEducators() {
   const [sp, setSp] = useSearchParams();
   const [meta, setMeta] = useState({ subjects: [], levels: [], regions: [], service_types: [], diplomas: [] });
   const [data, setData] = useState({ results: [], total: 0 });
@@ -94,9 +94,9 @@ export default function FindEducators({ embedded = false }) {
     </div>
   );
 
-  const body = (
-    <>
-      <div className={embedded ? "" : "mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"}>
+  return (
+    <PublicLayout>
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <h1 className="font-display text-3xl font-bold text-gray-900 lg:text-4xl">Trouver un éducateur</h1>
         <p className="mt-2 text-muted-foreground">{data.total} éducateur(s) correspondant à votre recherche.</p>
 
@@ -167,7 +167,6 @@ export default function FindEducators({ embedded = false }) {
           </div>
         </div>
       )}
-    </>
+    </PublicLayout>
   );
-  return embedded ? body : <PublicLayout>{body}</PublicLayout>;
 }

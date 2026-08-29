@@ -46,7 +46,7 @@ export default function Subscription() {
         onOpenChange={(v) => { if (!v) setPay(null); }}
         payload={pay ? { purpose: "subscription", plan: pay.name, audience, label: `Abonnement ${pay.name}` } : null}
         amountLabel={pay?.price}
-        onSuccess={() => { refreshUser(); }}
+        onSuccess={() => { setPay(null); refreshUser(); }}
       />
     </div>
   );
