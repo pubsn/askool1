@@ -36,10 +36,16 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Visionneuse de documents en superposition (DocViewer) côté admin et pour les pièces jointes (image/PDF in-page, pas de nouvel onglet)
 - Admin : onglet Signalements (traiter), documents de vérification ouverts en overlay
 
+## Implemented (2026-08-29, itération 3)
+- Filtre par distance : sur la vue Carte, clic sur la carte = centre de recherche + rayon (slider km), cercle orange, filtrage haversine côté backend (lat/lng par éducateur), compteur de résultats, réinitialisation de zone
+- Statut en ligne : indicateur « En ligne / Vu il y a X min/h/j / Hors ligne » (heartbeat /presence/ping, seuil 120s), pastille verte dans la liste de conversations
+- Accusés de lecture : « Envoyé » / « Vu » sur le dernier message envoyé (rafraîchissement auto de la conversation)
+
 ## Verified
 - iteration_1 : 27/27 backend + flux UI OK
 - iteration_2 : 14/14 uploads + carte + accès privé OK
 - iteration_3 : 7/7 flux messagerie enrichie + DocViewer OK
+- iteration_4 : distance filter + présence + accusés de lecture 100% OK
 
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage

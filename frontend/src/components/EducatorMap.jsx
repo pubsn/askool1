@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from "react-leaflet";
 import { useNavigate } from "react-router-dom";
 import { Stars } from "@/components/common";
 
@@ -24,20 +24,43 @@ const blueIcon = L.divIcon({
   iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28],
 });
 
-export default function EducatorMap({ educators }) {
+const centerIcon = L.divIcon({
+  className: "",
+  html: '<div style="background:#F8BF0E;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(248,191,14,.35)"></div>',
+  iconSize: [20, 20], iconAnchor: [10, 10],
+});
+
+function ClickPicker({ onPick }) {
+  useMapEvents({ click(e) { onPick?.([e.latlng.lat, e.latlng.lng]); } });
+  return null;
+}
+
+export default function EducatorMap({ educators, center = null, radius = null, onPick = null }) {
   const navigate = useNavigate();
   const markers = useMemo(() => educators.map((e) => {
-    const base = REGION_COORDS[e.region] || REGION_COORDS.Dakar;
-    const [dlat, dlng] = hashJitter(e.user_id);
-    return { ...e, pos: [base[0] + dlat, base[1] + dlng] };
+    let pos;
+    if (e.lat != null && e.lng != null) pos = [e.lat, e.lng];
+    else {
+      const base = REGION_COORDS[e.region] || REGION_COORDS.Dakar;
+      const [dlat, dlng] = hashJitter(e.user_id);
+      pos = [base[0] + dlat, base[1] + dlng];
+    }
+    return { ...e, pos };
   }), [educators]);
 
-  const center = markers[0]?.pos || [14.4974, -14.4524];
+  const mapCenter = center || markers[0]?.pos || [14.4974, -14.4524];
 
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-100 shadow-sm" data-testid="educator-map">
-      <MapContainer center={center} zoom={markers.length > 3 ? 7 : 12} style={{ height: 480, width: "100%" }} scrollWheelZoom>
+      <MapContainer center={mapCenter} zoom={center ? 10 : markers.length > 3 ? 7 : 12} style={{ height: 480, width: "100%" }} scrollWheelZoom>
         <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        {onPick && <ClickPicker onPick={onPick} />}
+        {center && radius && (
+          <>
+            <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#F8BF0E", fillColor: "#F8BF0E", fillOpacity: 0.12 }} />
+            <Marker position={center} icon={centerIcon} />
+          </>
+        )}
         {markers.map((e) => (
           <Marker key={e.user_id} position={e.pos} icon={blueIcon}>
             <Popup>
@@ -50,7 +73,7 @@ export default function EducatorMap({ educators }) {
                   </div>
                 </div>
                 <div className="mt-1 flex items-center gap-1"><Stars value={e.rating} size={12} /><span style={{ fontSize: 11 }}>({e.reviews_count || 0})</span></div>
-                <div style={{ fontSize: 13, margin: "4px 0" }}>{(e.hourly_rate || 0).toLocaleString()} FCFA/h · {e.location}</div>
+                <div style={{ fontSize: 13, margin: "4px 0" }}>{(e.hourly_rate || 0).toLocaleString()} FCFA/h · {e.location}{e.distance_km != null ? ` · ${e.distance_km} km` : ""}</div>
                 <button data-testid={`map-view-${e.user_id}`} onClick={() => navigate(`/educateurs/${e.user_id}`)}
                   style={{ background: "#2a4898", color: "#fff", border: 0, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", width: "100%" }}>
                   Voir le profil

@@ -18,7 +18,7 @@ from database import db, client
 import auth
 from auth import get_current_user, require_roles
 from constants import (SUBJECTS, LEVELS, SERVICE_TYPES, REGIONS, LANGUAGES,
-                       CONTRACT_TYPES, DIPLOMAS)
+                       CONTRACT_TYPES, DIPLOMAS, REGION_COORDS, region_latlng)
 from seed_data import seed_demo_data
 from storage import put_object, get_object, init_storage, APP_NAME, MIME_TYPES
 import jwt as _jwt
@@ -32,6 +32,27 @@ api = APIRouter(prefix="/api")
 
 now_iso = lambda: datetime.now(timezone.utc).isoformat()
 new_id = lambda p: f"{p}_{uuid.uuid4().hex[:16]}"
+
+import math
+
+
+def haversine_km(lat1, lng1, lat2, lng2):
+    r = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlmb = math.radians(lng2 - lng1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dlmb / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def is_online(last_seen: Optional[str]) -> bool:
+    if not last_seen:
+        return False
+    try:
+        dt = datetime.fromisoformat(last_seen)
+        return (datetime.now(timezone.utc) - dt).total_seconds() < 120
+    except Exception:
+        return False
 
 
 # ================= helpers =================
@@ -75,6 +96,7 @@ async def list_educators(
     min_experience: Optional[int] = None, diploma: Optional[str] = None,
     max_rate: Optional[int] = None, min_rating: Optional[float] = None,
     verified_only: bool = False, q: Optional[str] = None,
+    near_lat: Optional[float] = None, near_lng: Optional[float] = None, radius_km: Optional[float] = None,
     sort: str = "relevance", page: int = 1, page_size: int = 12,
 ):
     query: dict = {"active": True}
@@ -108,6 +130,19 @@ async def list_educators(
         "relevance": [("is_premium", -1), ("rating", -1), ("reviews_count", -1)],
     }
     sort_spec = sort_map.get(sort, sort_map["relevance"])
+    if near_lat is not None and near_lng is not None and radius_km:
+        all_docs = await db.educator_profiles.find(query, {"_id": 0}).sort(sort_spec).to_list(500)
+        near = []
+        for d in all_docs:
+            if d.get("lat") is None or d.get("lng") is None:
+                continue
+            dist = haversine_km(near_lat, near_lng, d["lat"], d["lng"])
+            if dist <= radius_km:
+                d["distance_km"] = round(dist, 1)
+                near.append(d)
+        total = len(near)
+        skip = (page - 1) * page_size
+        return {"total": total, "page": page, "page_size": page_size, "results": near[skip:skip + page_size]}
     total = await db.educator_profiles.count_documents(query)
     skip = (page - 1) * page_size
     docs = await db.educator_profiles.find(query, {"_id": 0}).sort(sort_spec).skip(skip).limit(page_size).to_list(page_size)
@@ -144,8 +179,9 @@ async def upsert_my_educator_profile(body: EducatorProfileBody,
                                      user: dict = Depends(require_roles("EDUCATOR", "ADULT_LEARNER"))):
     existing = await db.educator_profiles.find_one({"user_id": user["user_id"]}, {"_id": 0})
     data = body.model_dump()
+    lat, lng = region_latlng(data.get("region", ""), user["user_id"])
     data.update({"user_id": user["user_id"], "name": user.get("name"), "active": True,
-                 "updated_at": now_iso()})
+                 "lat": lat, "lng": lng, "updated_at": now_iso()})
     if existing:
         await db.educator_profiles.update_one({"user_id": user["user_id"]}, {"$set": data})
     else:
@@ -578,6 +614,8 @@ async def list_conversations(user: dict = Depends(get_current_user)):
             c["other_name"] = (ou or {}).get("name", "Utilisateur")
             c["other_user_id"] = others[0]
             c["other_avatar"] = (ou or {}).get("avatar_url")
+            c["other_last_seen"] = (ou or {}).get("last_seen")
+            c["other_online"] = is_online((ou or {}).get("last_seen"))
         _conv_flags(c, user["user_id"])
     return {"results": docs}
 
@@ -590,7 +628,15 @@ async def get_messages(conversation_id: str, user: dict = Depends(get_current_us
     msgs = await db.messages.find({"conversation_id": conversation_id}, {"_id": 0}).sort("created_at", 1).to_list(500)
     await db.messages.update_many({"conversation_id": conversation_id, "sender_user_id": {"$ne": user["user_id"]}},
                                   {"$set": {"read": True}})
-    return {"results": msgs, "conversation": _conv_flags(conv, user["user_id"])}
+    conv = _conv_flags(conv, user["user_id"])
+    others = [p for p in conv["participants"] if p != user["user_id"]]
+    if others:
+        ou = await db.users.find_one({"user_id": others[0]}, {"_id": 0})
+        conv["other_user_id"] = others[0]
+        conv["other_name"] = (ou or {}).get("name", "Utilisateur")
+        conv["other_last_seen"] = (ou or {}).get("last_seen")
+        conv["other_online"] = is_online((ou or {}).get("last_seen"))
+    return {"results": msgs, "conversation": conv}
 
 
 @api.post("/messages")
@@ -662,6 +708,16 @@ async def create_report(body: ReportBody, user: dict = Depends(get_current_user)
 
 
 # ================= notifications =================
+@api.post("/presence/ping")
+async def presence_ping(user: dict = Depends(get_current_user)):
+    await db.users.update_one({"user_id": user["user_id"]}, {"$set": {"last_seen": now_iso()}})
+    return {"ok": True}
+
+
+@api.get("/presence/{target_user_id}")
+async def presence_get(target_user_id: str, user: dict = Depends(get_current_user)):
+    u = await db.users.find_one({"user_id": target_user_id}, {"_id": 0, "last_seen": 1})
+    return {"online": is_online((u or {}).get("last_seen")), "last_seen": (u or {}).get("last_seen")}
 @api.get("/notifications")
 async def list_notifications(user: dict = Depends(get_current_user)):
     docs = await db.notifications.find({"user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
@@ -950,6 +1006,10 @@ async def startup():
     await db.login_attempts.create_index("email")
     await auth.seed_admin()
     await seed_demo_data()
+    # backfill lat/lng for educator profiles missing coordinates
+    async for p in db.educator_profiles.find({"$or": [{"lat": {"$exists": False}}, {"lat": None}]}, {"_id": 0, "user_id": 1, "region": 1}):
+        lat, lng = region_latlng(p.get("region", ""), p["user_id"])
+        await db.educator_profiles.update_one({"user_id": p["user_id"]}, {"$set": {"lat": lat, "lng": lng}})
     try:
         await asyncio.to_thread(init_storage)
         logger.info("Object storage initialized")

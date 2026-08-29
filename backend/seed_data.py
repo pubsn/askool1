@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from database import db
 from auth import hash_password
+from constants import region_latlng
 
 now_iso = lambda: datetime.now(timezone.utc).isoformat()
 
@@ -135,6 +136,7 @@ async def seed_demo_data():
             "availability": {"days": ["Lundi", "Mercredi", "Samedi"], "hours": "16h - 19h",
                              "zones": [e["region"]]},
             "available_now": True, "rating": e["rating"], "reviews_count": e["reviews_count"],
+            "lat": region_latlng(e["region"], uid)[0], "lng": region_latlng(e["region"], uid)[1],
             "views": 40 + i * 13, "is_verified": e["is_verified"],
             "verification_status": "Vérifié" if e["is_verified"] else "Non vérifié",
             "active": True, "created_at": now_iso(),

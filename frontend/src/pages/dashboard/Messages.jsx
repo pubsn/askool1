@@ -3,7 +3,7 @@ import { PageHeader, Loader, EmptyState } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Send, Paperclip, MoreVertical, Ban, Flag, ShieldOff, FileText, Loader2 } from "lucide-react";
+import { MessageSquare, Send, Paperclip, MoreVertical, Ban, Flag, ShieldOff, FileText, Loader2, Check, CheckCheck } from "lucide-react";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
@@ -38,7 +38,40 @@ export default function Messages() {
   };
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // presence heartbeat
+  useEffect(() => {
+    const ping = () => api.post("/presence/ping").catch(() => {});
+    ping();
+    const t = setInterval(ping, 45000);
+    return () => clearInterval(t);
+  }, []);
+
+  // refresh active conversation (read receipts + presence) + conv list
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/conversations/${active.conversation_id}/messages`);
+        setMessages(data.results);
+        setActive((a) => ({ ...a, ...(data.conversation || {}) }));
+      } catch {}
+      loadConvs();
+    }, 12000);
+    return () => clearInterval(t);
+  }, [active?.conversation_id]);
+
+  const lastSeenText = (iso) => {
+    if (!iso) return "Hors ligne";
+    const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 120) return "En ligne";
+    if (diff < 3600) return `Vu il y a ${Math.floor(diff / 60)} min`;
+    if (diff < 86400) return `Vu il y a ${Math.floor(diff / 3600)} h`;
+    if (diff < 604800) return `Vu il y a ${Math.floor(diff / 86400)} j`;
+    return "Hors ligne";
+  };
+
   const blocked = active?.is_blocked;
+  const lastOwnId = [...messages].reverse().find((m) => m.sender_user_id === user.user_id)?.message_id;
 
   const send = async (attachment_file_id) => {
     if ((!text.trim() && !attachment_file_id) || !active) return;
@@ -89,8 +122,9 @@ export default function Messages() {
           <div className="hide-scrollbar overflow-y-auto border-r border-gray-100 md:col-span-1">
             {convs.map((c) => (
               <button key={c.conversation_id} data-testid={`conv-${c.conversation_id}`} onClick={() => openConv(c)}
-                className={cn("flex w-full items-center gap-3 border-b border-gray-50 p-4 text-left hover:bg-gray-50", active?.conversation_id === c.conversation_id && "bg-askool-bluelight")}>
+                className={cn("relative flex w-full items-center gap-3 border-b border-gray-50 p-4 text-left hover:bg-gray-50", active?.conversation_id === c.conversation_id && "bg-askool-bluelight")}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-askool-blue text-sm font-semibold text-white">{(c.other_name || "?").charAt(0)}</span>
+                  {c.other_online && <span data-testid={`online-dot-${c.conversation_id}`} className="absolute bottom-0 left-7 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />}
                 <div className="min-w-0 flex-1"><div className="flex items-center gap-1 truncate font-medium text-gray-900">{c.other_name}{c.is_blocked && <Ban size={12} className="text-red-400" />}</div><div className="truncate text-xs text-muted-foreground">{c.last_message}</div></div>
               </button>
             ))}
@@ -99,7 +133,13 @@ export default function Messages() {
             {active ? (
               <>
                 <div className="flex items-center justify-between border-b border-gray-100 p-4">
-                  <span className="font-display font-semibold text-gray-900">{active.other_name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-semibold text-gray-900">{active.other_name}</span>
+                    <span data-testid="presence-status" className={cn("flex items-center gap-1 text-xs", active.other_online ? "text-emerald-600" : "text-muted-foreground")}>
+                      {active.other_online && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
+                      {lastSeenText(active.other_last_seen)}
+                    </span>
+                  </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><button data-testid="conv-menu-btn" className="rounded-lg p-2 hover:bg-gray-100"><MoreVertical size={18} className="text-gray-500" /></button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -128,6 +168,11 @@ export default function Messages() {
                                 <FileText size={15} /> {m.attachment.name}
                               </DocViewer>
                             )}
+                          </div>
+                        )}
+                        {mine && m.message_id === lastOwnId && (
+                          <div data-testid="read-receipt" className="mt-1 flex items-center justify-end gap-1 text-[10px] text-white/70">
+                            {m.read ? <><CheckCheck size={12} /> Vu</> : <><Check size={12} /> Envoyé</>}
                           </div>
                         )}
                       </div>

@@ -18,6 +18,8 @@ export default function FindEducators() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("list");
   const [showFilters, setShowFilters] = useState(false);
+  const [center, setCenter] = useState(null);
+  const [radius, setRadius] = useState(15);
   const [filters, setFilters] = useState({
     q: sp.get("q") || "", subject: sp.get("subject") || "", level: sp.get("level") || "",
     service_type: sp.get("service_type") || "", region: sp.get("region") || "",
@@ -31,10 +33,11 @@ export default function FindEducators() {
     setLoading(true);
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([k, v]) => { if (v !== "" && v !== false) params.set(k, v); });
+    if (view === "map" && center) { params.set("near_lat", center[0]); params.set("near_lng", center[1]); params.set("radius_km", radius); }
     try { const { data } = await api.get(`/educators?${params.toString()}`); setData(data); }
     catch { setData({ results: [], total: 0 }); }
     finally { setLoading(false); }
-  }, [filters]);
+  }, [filters, center, radius, view]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -99,10 +102,24 @@ export default function FindEducators() {
           </aside>
 
           <div className="flex-1">
-            {loading ? <Loader /> : data.results.length === 0 ? (
+            {view === "map" ? (
+              <div className="space-y-3">
+                <div className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground" data-testid="distance-hint">
+                    {center ? <>Éducateurs à moins de <b className="text-askool-blue">{radius} km</b> du point choisi ({data.total} trouvé{data.total > 1 ? "s" : ""}).</> : "📍 Cliquez sur la carte pour définir votre zone de recherche."}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm text-gray-600">Rayon
+                      <input data-testid="radius-slider" type="range" min="2" max="60" step="1" value={radius} onChange={(e) => setRadius(parseInt(e.target.value))} className="accent-askool-blue" />
+                      <span className="w-12 font-medium text-gray-900">{radius} km</span>
+                    </label>
+                    {center && <Button data-testid="reset-zone" size="sm" variant="ghost" onClick={() => setCenter(null)} className="text-gray-500"><X size={14} /> Zone</Button>}
+                  </div>
+                </div>
+                <EducatorMap educators={data.results} center={center} radius={center ? radius : null} onPick={setCenter} />
+              </div>
+            ) : loading ? <Loader /> : data.results.length === 0 ? (
               <EmptyState title="Aucun éducateur trouvé" description="Essayez d'élargir vos critères de recherche." action={<Button onClick={reset} className="rounded-xl bg-askool-blue text-white">Réinitialiser</Button>} />
-            ) : view === "map" ? (
-              <EducatorMap educators={data.results} />
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {data.results.map((e) => <EducatorCard key={e.user_id} edu={e} />)}
