@@ -31,6 +31,7 @@ import Bookings from "@/pages/dashboard/Bookings";
 import Favorites from "@/pages/dashboard/Favorites";
 import Reviews from "@/pages/dashboard/Reviews";
 import Subscription from "@/pages/dashboard/Subscription";
+import Opportunities from "@/pages/dashboard/Opportunities";
 import PublishJob from "@/pages/dashboard/PublishJob";
 import MyJobs from "@/pages/dashboard/MyJobs";
 import CVtheque from "@/pages/dashboard/CVtheque";
@@ -73,6 +74,7 @@ function AppRouter() {
         <Route index element={<DashboardHome />} />
         <Route path="profil" element={<EducatorProfileEdit />} />
         <Route path="candidatures" element={<Applications />} />
+        <Route path="opportunites" element={<Opportunities />} />
         <Route path="reservations" element={<Bookings />} />
         <Route path="favoris" element={<Favorites />} />
         <Route path="avis" element={<Reviews />} />

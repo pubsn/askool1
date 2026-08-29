@@ -480,6 +480,28 @@ async def my_tutoring_requests(user: dict = Depends(require_roles("PARENT", "ADU
     return {"results": docs}
 
 
+@api.get("/tutoring-requests/open")
+async def open_tutoring_requests(subject: Optional[str] = None, region: Optional[str] = None,
+                                 user: dict = Depends(require_roles("EDUCATOR"))):
+    query = {"status": "Ouverte"}
+    if subject:
+        query["subject"] = subject
+    if region:
+        query["region"] = region
+    docs = await db.tutoring_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(200)
+    edu = await db.educator_profiles.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
+    out = []
+    for r in docs:
+        u = await db.users.find_one({"user_id": r["requester_user_id"]}, {"_id": 0, "name": 1})
+        r["requester_name"] = (u or {}).get("name", "Parent / Apprenant")
+        score, reasons = compute_match(r, edu)
+        r["match_score"] = score
+        r["match_reasons"] = reasons
+        out.append(r)
+    out.sort(key=lambda x: x.get("match_score", 0), reverse=True)
+    return {"results": out}
+
+
 @api.get("/tutoring-requests/{request_id}/matches")
 async def request_matches(request_id: str, user: dict = Depends(get_current_user)):
     req = await db.tutoring_requests.find_one({"request_id": request_id}, {"_id": 0})

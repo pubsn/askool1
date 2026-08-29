@@ -1,0 +1,49 @@
+{
+  "summary": "Full backend + frontend validation of the new Educator 'Opportunités' feature (bug fix: educators now see school job offers and open parent/adult-learner tutoring requests). All 4 pytest cases pass and the full UI flow (login → sidebar → tabs → contact dialog → send message → redirect) works on the public preview URL.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Opportunités contact dialog", "issues": ["A11y console warning: Radix DialogContent missing Description/aria-describedby. Non-blocking; consider adding <DialogDescription> for screen-reader users."]}
+    ]
+  },
+  "test_results": {
+    "backend": {
+      "POST /api/tutoring-requests (PARENT)": "200 — request created with status 'Ouverte'",
+      "GET /api/tutoring-requests/open (EDUCATOR)": "200 — results[] contains requester_name (str) + match_score (int), no _id leak",
+      "GET /api/tutoring-requests/open (PARENT)": "403 as expected",
+      "POST /api/messages (EDUCATOR → requester)": "200"
+    },
+    "frontend": {
+      "educator_login": "OK (awa.ndiaye@askool.sn)",
+      "sidebar_link /dashboard/opportunites": "present (2 matches — sidebar + mobile drawer)",
+      "home_action-Opportunités_card": "present (data-testid=action-Opportunités)",
+      "profil_complete_block_removed": "confirmed (0 occurrences on educator home)",
+      "route /dashboard/opportunites inside DashboardLayout": "sidebar remains visible",
+      "tab-jobs → jobs-grid": "rendered",
+      "tab-requests → requests-grid": "rendered with 4 cards, each showing '% compatible' badge and 'Proposer mes services' button",
+      "contact-request-<id> click → contact-request-dialog": "opens",
+      "send-contact-btn → POST /messages → redirect": "redirected to /dashboard/messages with success toast 'Message envoyé !'"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_opportunities.py",
+    "/app/test_reports/pytest/opportunities.xml"
+  ],
+  "action_items": [
+    "Optional a11y: add <DialogDescription> to Opportunities contact dialog to silence Radix warning."
+  ],
+  "critical_code_review_comments": [
+    "server.py GET /tutoring-requests/open: per-doc await db.users.find_one inside a loop — N+1 query pattern. For scale, batch requester_user_ids and $in-query users, or aggregate with $lookup.",
+    "Opportunities.jsx: catch blocks swallow errors silently for GET (setJobs([]) / setRequests([])). Consider a toast/inline error so users can distinguish empty state vs. network failure.",
+    "Opportunities.jsx: no auth/role guard on the client component — relies on route/sidebar to gate. Server correctly enforces EDUCATOR-only, so acceptable."
+  ],
+  "updated_files": ["/app/backend/tests/test_opportunities.py"],
+  "success_rate": {"backend": "100% (4/4)", "frontend": "100% (all listed acceptance criteria met)"},
+  "test_credentials": "Educator: awa.ndiaye@askool.sn / Askool2026! ; Parent: parent@askool.sn / Askool2026!",
+  "seed_data_creation": "One TEST_ tutoring request created by parent@ (subject Mathématiques, Terminale, Dakar). Safe to keep per instructions.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Educator 'Opportunités' page (/dashboard/opportunites) verified end-to-end. Backend endpoint GET /api/tutoring-requests/open returns >=3 seeded open requests with enriched requester_name + match_score. UI tabs (tab-jobs / tab-requests), grids (jobs-grid / requests-grid), request cards (request-<id>), contact button (contact-request-<id>), dialog (contact-request-dialog), textarea (contact-message) and send button (send-contact-btn) all wired correctly. Home action-Opportunités card and sidebar entry present; 'Profil complété' progress removed from educator home as required."
+}

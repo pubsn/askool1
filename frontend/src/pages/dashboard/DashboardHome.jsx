@@ -36,7 +36,7 @@ function EducatorHome({ navigate, user }) {
         <StatCard icon={Star} label="Note moyenne" value={prof?.rating || 0} testId="stat-rating" />
       </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <ActionCard icon={Search} title="Trouver un emploi" onClick={() => navigate("/emplois")} />
+        <ActionCard icon={Briefcase} title="Opportunités" onClick={() => navigate("/dashboard/opportunites")} />
         <ActionCard icon={FileText} title="Mes candidatures" onClick={() => navigate("/dashboard/candidatures")} />
         <ActionCard icon={CreditCard} title="Passer Premium" onClick={() => navigate("/dashboard/abonnement")} />
       </div>

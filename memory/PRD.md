@@ -65,6 +65,12 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - État restauré : boutons « Trouver un éducateur/emploi » rouvrent les pages publiques `/educateurs` et `/emplois` ; après inscription → redirection directe vers `/dashboard` ; pas de reçus PDF ni de page paiements.
 - CONSERVÉ : le flux de paiement Mobile Money de base (`PaymentDialog` sélection opérateur → téléphone → code 4 chiffres) pour abonnements et réservations.
 
+## Implemented (2026-06 — Opportunités côté Éducateur)
+- Nouvelle page « Opportunités » (`/dashboard/opportunites`, EDUCATOR) : onglet « Offres des écoles » (liste `/jobs`) + onglet « Demandes des parents » (nouvel endpoint `GET /api/tutoring-requests/open`, EDUCATOR only, 403 sinon)
+- Chaque demande affiche matière/niveau, nom du demandeur, budget, % de compatibilité (compute_match) ; bouton « Proposer mes services » → message au parent (`POST /messages`) puis redirection Messages
+- Entrée de menu « Opportunités » (barre latérale éducateur) + carte d'action sur l'accueil éducateur
+- Vérifié iteration_8 : backend 4/4 pytest, flux UI complet OK
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

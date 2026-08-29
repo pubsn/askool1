@@ -14,6 +14,7 @@ const MENUS = {
   EDUCATOR: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mon profil", to: "/dashboard/profil", icon: User },
+    { label: "Opportunités", to: "/dashboard/opportunites", icon: Briefcase },
     { label: "Mes candidatures", to: "/dashboard/candidatures", icon: FileText },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
