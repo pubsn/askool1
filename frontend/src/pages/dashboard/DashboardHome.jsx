@@ -85,7 +85,7 @@ function ParentHome({ navigate, user, role }) {
         <StatCard icon={Calendar} label="Cours à venir" value={bookings.filter((b) => b.status === "Confirmé").length} accent="green" testId="stat-upcoming" />
       </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <ActionCard icon={Search} title="Trouver un tuteur" onClick={() => navigate("/educateurs")} />
+        <ActionCard icon={Search} title="Trouver un tuteur" onClick={() => navigate("/dashboard/tuteurs")} />
         {role === "PARENT" && <ActionCard icon={Users} title="Mes élèves" onClick={() => navigate("/dashboard/eleves")} />}
         <ActionCard icon={FileText} title="Mes demandes" onClick={() => navigate("/dashboard/demandes")} />
       </div>

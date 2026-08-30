@@ -75,6 +75,7 @@ function AppRouter() {
         <Route path="profil" element={<EducatorProfileEdit />} />
         <Route path="candidatures" element={<Applications />} />
         <Route path="opportunites" element={<Opportunities />} />
+        <Route path="tuteurs" element={<FindEducators embedded />} />
         <Route path="reservations" element={<Bookings />} />
         <Route path="favoris" element={<Favorites />} />
         <Route path="avis" element={<Reviews />} />
