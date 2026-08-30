@@ -57,6 +57,7 @@ export default function Applications() {
                     <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                   </Select>
                 )}
+                {isSchool && <Button size="sm" variant="outline" data-testid={`view-profile-${a.application_id}`} onClick={() => navigate(`/educateurs/${a.educator_user_id}`)} className="rounded-lg">Voir le profil</Button>}
                 {isSchool && <Button size="sm" variant="outline" onClick={() => api.post("/messages", { recipient_user_id: a.educator_user_id, content: `Bonjour ${a.educator_name}, concernant votre candidature.` }).then(() => { toast.success("Message envoyé"); navigate("/dashboard/messages"); })} className="rounded-lg">Contacter</Button>}
               </div>
             </div>
