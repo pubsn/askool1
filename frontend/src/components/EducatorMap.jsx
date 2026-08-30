@@ -26,7 +26,7 @@ const blueIcon = L.divIcon({
 
 const centerIcon = L.divIcon({
   className: "",
-  html: '<div style="background:#F8BF0E;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(248,191,14,.35)"></div>',
+  html: '<div style="background:#e9483e;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(233,72,62,.35)"></div>',
   iconSize: [20, 20], iconAnchor: [10, 10],
 });
 
@@ -57,7 +57,7 @@ export default function EducatorMap({ educators, center = null, radius = null, o
         {onPick && <ClickPicker onPick={onPick} />}
         {center && radius && (
           <>
-            <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#F8BF0E", fillColor: "#F8BF0E", fillOpacity: 0.12 }} />
+            <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#e9483e", fillColor: "#e9483e", fillOpacity: 0.12 }} />
             <Marker position={center} icon={centerIcon} />
           </>
         )}

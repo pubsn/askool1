@@ -6,8 +6,8 @@
 :root {
   --askool-blue: #2a4898;
   --askool-blue-hover: #203a7a;
-  --askool-orange: #F8BF0E;
-  --askool-orange-hover: #e0ab0c;
+  --askool-orange: #e9483e;
+  --askool-orange-hover: #d13a30;
 }
 
 body {
@@ -59,4 +59,4 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-::selection { background: #F8BF0E; color: #111827; }
+::selection { background: #e9483e; color: #fff; }
