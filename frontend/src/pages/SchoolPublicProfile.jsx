@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MapPin, Building2, ShieldCheck, Heart, Bell, BellOff, MessageSquare, Globe, Phone, Mail, Facebook, Instagram, Linkedin, Navigation, GraduationCap, Users, Calendar, Languages, BookOpen, Trophy, School, HandHelping, Image as ImageIcon, Briefcase, Lock, ZoomIn } from "lucide-react";
+import { MapPin, Building2, ShieldCheck, Heart, Bell, BellOff, MessageSquare, Globe, Phone, Mail, Facebook, Instagram, Linkedin, Navigation, GraduationCap, Users, Calendar, Languages, BookOpen, Trophy, School, HandHelping, Image as ImageIcon, Briefcase, Lock, ZoomIn, Newspaper } from "lucide-react";
+import { CAT_COLORS } from "@/pages/dashboard/SchoolNews";
 import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -41,10 +42,11 @@ export default function SchoolPublicProfile() {
   const [openProp, setOpenProp] = useState(false);
   const [prop, setProp] = useState({ service_type: "Enseignement", subject: "", level: "", availability: "", experience: "", message: "" });
   const [ptypes, setPtypes] = useState([]);
+  const [posts, setPosts] = useState([]);
 
-  const load = () => api.get(`/schools/slug/${slug}`).then(({ data }) => setData(data)).catch(() => setData(false));
+  const load = () => api.get(`/schools/slug/${slug}`).then(({ data }) => { setData(data); api.get(`/schools/${data.school.school_id}/posts`).then((r) => setPosts(r.data.results)).catch(() => {}); }).catch(() => setData(false));
   useEffect(() => { load(); api.get("/schools/meta").then(({ data }) => setPtypes(data.proposal_types)).catch(() => {}); }, [slug]);
-  useEffect(() => { if (data && window.location.hash === "#offres") document.getElementById("offres")?.scrollIntoView({ behavior: "smooth" }); }, [data]);
+  useEffect(() => { if (data && ["#offres", "#actualites"].includes(window.location.hash)) document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: "smooth" }); }, [data]);
 
   if (data === null) return <PublicLayout><Loader /></PublicLayout>;
   if (data === false) return <PublicLayout><div className="py-24 text-center">Établissement introuvable.</div></PublicLayout>;
@@ -143,6 +145,23 @@ export default function SchoolPublicProfile() {
                       <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-opacity group-hover:bg-black/30 group-hover:opacity-100"><ZoomIn /></span>
                       {g.caption && <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2 py-1.5 text-left text-xs text-white">{g.caption}</span>}
                     </button>
+                  ))}
+                </div>
+              </Section>
+            )}
+
+            {posts.length > 0 && (
+              <Section id="actualites" icon={Newspaper} title={`Actualités (${posts.length})`} testId="section-news">
+                <div className="space-y-3">
+                  {posts.map((p) => (
+                    <div key={p.post_id} data-testid={`public-news-${p.post_id}`} className="flex gap-4 rounded-xl border border-gray-100 p-4">
+                      {p.image && <img src={p.image} alt="" className="h-20 w-20 shrink-0 rounded-lg object-cover" />}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CAT_COLORS[p.category] || "bg-gray-100 text-gray-700"}`}>{p.category}</span><span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("fr-FR")}</span></div>
+                        <h3 className="mt-1 font-display font-semibold text-gray-900">{p.title}</h3>
+                        <p className="mt-1 whitespace-pre-line text-sm text-gray-700">{p.content}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </Section>

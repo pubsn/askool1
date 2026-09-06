@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   LayoutDashboard, User, FileText, Calendar, Heart, MessageSquare, Star,
   CreditCard, Settings, PlusCircle, Briefcase, Users, Search, Building2,
-  Bell, LogOut, GraduationCap, ShieldCheck, Home, HandHelping,
+  Bell, LogOut, GraduationCap, ShieldCheck, Home, HandHelping, Newspaper,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "@/components/layout/PublicLayout";
@@ -29,6 +29,7 @@ const MENUS = {
   SCHOOL: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mon établissement", to: "/dashboard/etablissement", icon: Building2 },
+    { label: "Actualités", to: "/dashboard/actualites", icon: Newspaper },
     { label: "Publier une offre", to: "/dashboard/publier", icon: PlusCircle },
     { label: "Mes offres", to: "/dashboard/offres", icon: Briefcase },
     { label: "Candidatures", to: "/dashboard/candidatures", icon: FileText },

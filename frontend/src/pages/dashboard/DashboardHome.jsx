@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search, Building2, Heart, MessageSquare } from "lucide-react";
+import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search, Building2, Heart, MessageSquare, Newspaper } from "lucide-react";
 import { StatCard, PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
@@ -76,6 +76,7 @@ function SchoolHome({ navigate, user }) {
       {ov.verification_status && ov.verification_status !== "Vérifié" && <div data-testid="verif-banner" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span><ShieldCheck size={14} className="mr-1 inline" /> Statut : {ov.verification_status}. Faites vérifier votre établissement pour renforcer la confiance des éducateurs.</span><Button size="sm" variant="outline" onClick={() => navigate("/dashboard/etablissement")} className="rounded-lg">Demander la vérification</Button></div>}
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ActionCard icon={Building2} title="Mon établissement" onClick={() => navigate("/dashboard/etablissement")} />
+        <ActionCard icon={Newspaper} title="Publier une actualité" onClick={() => navigate("/dashboard/actualites")} />
         <ActionCard icon={FileText} title="Candidatures" onClick={() => navigate("/dashboard/candidatures")} />
         <ActionCard icon={Users} title="Propositions reçues" onClick={() => navigate("/dashboard/propositions")} />
         <ActionCard icon={Search} title="CVthèque" onClick={() => navigate("/dashboard/cvtheque")} />

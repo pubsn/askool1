@@ -19,6 +19,7 @@ import JobDetail from "@/pages/JobDetail";
 import FindSchools from "@/pages/FindSchools";
 import SchoolPublicProfile from "@/pages/SchoolPublicProfile";
 import Proposals from "@/pages/dashboard/Proposals";
+import SchoolNews from "@/pages/dashboard/SchoolNews";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
@@ -84,6 +85,7 @@ function AppRouter() {
         <Route path="ecoles" element={<FindSchools embedded />} />
         <Route path="emplois" element={<FindJobs embedded />} />
         <Route path="propositions" element={<Proposals />} />
+        <Route path="actualites" element={<SchoolNews />} />
         <Route path="reservations" element={<Bookings />} />
         <Route path="favoris" element={<Favorites />} />
         <Route path="avis" element={<Reviews />} />

@@ -86,6 +86,11 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Frontend : `/ecoles` (FindSchools, aussi `/dashboard/ecoles`), `/ecoles/:slug` (SchoolPublicProfile : couverture, logo, carte Leaflet + itinéraire, galerie zoom/catégories, offres, proposer mes services, contacter, favoris, suivre, similaires), `SchoolProfile` en 8 onglets, `Proposals.jsx` (`/dashboard/propositions`), Applications avec timeline, JobDetail flux 2 étapes (aperçu → envoi → confirmation), FindJobs onglets Toutes/Nouvelles/Recommandées/Proches (aussi `/dashboard/emplois`), Favoris (écoles favorites / suivies / éducateurs), accueil école (vue d'ensemble) et éducateur (2 blocs), nav « Écoles »
 - Seed : `enrich_schools()` idempotent enrichit les écoles démo (slug, couverture, galerie, etc.)
 
+## Implemented (2026-06 — Actualités École)
+- `POST/GET /schools/me/posts`, `DELETE /schools/me/posts/{id}`, `GET /schools/{school_id}/posts` (catégories : Actualité, Événement, Besoin de recrutement, Annonce ; image optionnelle) ; chaque publication notifie les abonnés (`school_post`, lien `/ecoles/{slug}#actualites`)
+- Page école `/dashboard/actualites` (SchoolNews.jsx : formulaire + liste + suppression), entrée menu « Actualités », carte d'action sur l'accueil ; section « Actualités » sur le profil public
+- Vérifié : curl (création, notification follower, 400 catégorie invalide) + screenshots
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

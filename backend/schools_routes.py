@@ -391,3 +391,53 @@ async def recommended_jobs(user: dict = Depends(require_roles("EDUCATOR"))):
     out.sort(key=lambda x: x["match_score"], reverse=True)
     nearby = [j for j in out if edu.get("region") and j.get("region") == edu.get("region")]
     return {"recommended": out[:12], "nearby": nearby[:12], "region": edu.get("region", "")}
+
+
+# ================= school news posts =================
+POST_CATEGORIES = ["Actualité", "Événement", "Besoin de recrutement", "Annonce"]
+
+
+class PostBody(BaseModel):
+    title: str
+    content: str
+    category: str = "Actualité"
+    image: Optional[str] = None
+
+
+@router.post("/schools/me/posts")
+async def create_post(body: PostBody, user: dict = Depends(require_roles("SCHOOL"))):
+    school = await db.schools.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    if not school:
+        raise HTTPException(status_code=400, detail="Créez d'abord votre fiche établissement")
+    if not body.title.strip() or not body.content.strip():
+        raise HTTPException(status_code=400, detail="Titre et contenu requis")
+    if body.category not in POST_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Catégorie invalide")
+    doc = {"post_id": new_id("post"), "school_id": school["school_id"], "school_user_id": user["user_id"],
+           "school_name": school["name"], "school_slug": school.get("slug"), **body.model_dump(), "created_at": now_iso()}
+    await db.school_posts.insert_one(doc)
+    notified = 0
+    async for f in db.school_follows.find({"school_id": school["school_id"]}, {"_id": 0, "user_id": 1}):
+        await notify(f["user_id"], "school_post", f"{body.category} — {school['name']}", body.title, f"/ecoles/{school.get('slug')}#actualites")
+        notified += 1
+    return {"post": {k: v for k, v in doc.items() if k != "_id"}, "notified": notified}
+
+
+@router.get("/schools/me/posts")
+async def my_posts(user: dict = Depends(require_roles("SCHOOL"))):
+    docs = await db.school_posts.find({"school_user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"results": docs}
+
+
+@router.delete("/schools/me/posts/{post_id}")
+async def delete_post(post_id: str, user: dict = Depends(require_roles("SCHOOL"))):
+    r = await db.school_posts.delete_one({"post_id": post_id, "school_user_id": user["user_id"]})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Actualité introuvable")
+    return {"message": "Supprimée"}
+
+
+@router.get("/schools/{school_id}/posts")
+async def school_posts(school_id: str):
+    docs = await db.school_posts.find({"school_id": school_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return {"results": docs}
