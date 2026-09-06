@@ -20,7 +20,8 @@ import auth
 from auth import get_current_user, require_roles
 from constants import (SUBJECTS, LEVELS, SERVICE_TYPES, REGIONS, LANGUAGES,
                        CONTRACT_TYPES, DIPLOMAS, REGION_COORDS, region_latlng)
-from seed_data import seed_demo_data
+from seed_data import seed_demo_data, enrich_schools
+from schools_routes import router as schools_router, optional_user
 from storage import put_object, get_object, init_storage, APP_NAME, MIME_TYPES
 import jwt as _jwt
 from auth import _secret, JWT_ALGORITHM
@@ -195,6 +196,7 @@ class EducatorProfileBody(BaseModel):
     experiences: List[dict] = []
     availability: dict = {}
     available_now: bool = True
+    privacy: dict = {}
 
 
 @api.put("/educators/me")
@@ -218,46 +220,33 @@ async def upsert_my_educator_profile(body: EducatorProfileBody,
 
 
 @api.get("/educators/{user_id}")
-async def get_educator(user_id: str):
+async def get_educator(user_id: str, request: Request):
     prof = await educator_public(user_id)
     if not prof:
         raise HTTPException(status_code=404, detail="Profil introuvable")
+    viewer = await optional_user(request)
+    privacy = prof.get("privacy") or {}
+    owner_or_admin = viewer and (viewer["user_id"] == user_id or viewer.get("role") == "ADMIN")
+    has_contact = False
+    if viewer and not owner_or_admin:
+        pair = sorted([viewer["user_id"], user_id])
+        has_contact = bool(await db.conversations.find_one({"participants": {"$all": pair, "$size": 2}}))
+    visible = lambda k: owner_or_admin or privacy.get(k, "public") == "public" or (privacy.get(k) == "after_contact" and has_contact)
+    u = await db.users.find_one({"user_id": user_id}, {"_id": 0, "phone": 1, "email": 1})
+    prof["contact"] = {"phone": (u or {}).get("phone", "") if visible("contact") else "",
+                       "email": (u or {}).get("email", "") if visible("contact") else "",
+                       "unlocked": bool(visible("contact"))}
+    if not visible("location"):
+        prof["location"] = prof.get("region", "")
+    if not visible("experience"):
+        prof["experiences"] = []
+        prof["diplomas"] = []
     await db.educator_profiles.update_one({"user_id": user_id}, {"$inc": {"views": 1}})
     reviews = await db.reviews.find({"educator_user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return {"profile": prof, "reviews": reviews}
 
 
-# ================= schools & jobs =================
-class SchoolBody(BaseModel):
-    name: str
-    region: str = ""
-    location: str = ""
-    description: str = ""
-    school_type: str = ""
-    logo: Optional[str] = None
-
-
-@api.put("/schools/me")
-async def upsert_school(body: SchoolBody, user: dict = Depends(require_roles("SCHOOL"))):
-    existing = await db.schools.find_one({"user_id": user["user_id"]}, {"_id": 0})
-    data = body.model_dump()
-    data.update({"user_id": user["user_id"], "updated_at": now_iso()})
-    if existing:
-        await db.schools.update_one({"user_id": user["user_id"]}, {"$set": data})
-    else:
-        data.update({"school_id": new_id("school"), "verification_status": "Non vérifié",
-                     "is_verified": False, "subscription_tier": "Découverte", "created_at": now_iso()})
-        await db.schools.insert_one(data)
-    school = await db.schools.find_one({"user_id": user["user_id"]}, {"_id": 0})
-    return {"school": school}
-
-
-@api.get("/schools/me")
-async def get_my_school(user: dict = Depends(require_roles("SCHOOL"))):
-    school = await db.schools.find_one({"user_id": user["user_id"]}, {"_id": 0})
-    return {"school": school}
-
-
+# ================= schools & jobs (school routes: schools_routes.py) =================
 class AvatarBody(BaseModel):
     avatar_url: Optional[str] = None
 
@@ -290,6 +279,8 @@ class JobBody(BaseModel):
 @api.get("/jobs")
 async def list_jobs(subject: Optional[str] = None, level: Optional[str] = None,
                     region: Optional[str] = None, contract_type: Optional[str] = None,
+                    school_id: Optional[str] = None, max_experience: Optional[int] = None,
+                    has_salary: bool = False, since_days: Optional[int] = None,
                     q: Optional[str] = None, page: int = 1, page_size: int = 12):
     query: dict = {"status": "published"}
     if subject:
@@ -300,6 +291,15 @@ async def list_jobs(subject: Optional[str] = None, level: Optional[str] = None,
         query["region"] = region
     if contract_type:
         query["contract_type"] = contract_type
+    if school_id:
+        query["school_id"] = school_id
+    if max_experience is not None:
+        query["experience_required"] = {"$lte": max_experience}
+    if has_salary:
+        query["salary"] = {"$nin": ["", None]}
+    if since_days:
+        from datetime import timedelta
+        query["created_at"] = {"$gte": (datetime.now(timezone.utc) - timedelta(days=since_days)).isoformat()}
     if q:
         query["$or"] = [{"title": {"$regex": q, "$options": "i"}},
                         {"description": {"$regex": q, "$options": "i"}},
@@ -331,10 +331,14 @@ async def create_job(body: JobBody, user: dict = Depends(require_roles("SCHOOL")
     data = body.model_dump()
     data.update({"offer_id": new_id("offer"), "school_user_id": user["user_id"],
                  "school_name": (school or {}).get("name", user.get("name")),
-                 "school_id": (school or {}).get("school_id"),
+                 "school_id": (school or {}).get("school_id"), "school_slug": (school or {}).get("slug"),
                  "region": data.get("region") or (school or {}).get("region", ""),
                  "views": 0, "applications_count": 0, "created_at": now_iso(), "updated_at": now_iso()})
     await db.job_offers.insert_one(data)
+    if data["status"] == "published" and school:
+        async for f in db.school_follows.find({"school_id": school["school_id"]}, {"_id": 0, "user_id": 1}):
+            await notify(f["user_id"], "new_offer", "Nouvelle offre d'une école suivie",
+                         f"{school['name']} a publié « {data['title']} »", f"/emplois/{data['offer_id']}")
     return {"job": {k: v for k, v in data.items() if k != "_id"}}
 
 
@@ -353,6 +357,20 @@ async def update_job(offer_id: str, body: JobBody, user: dict = Depends(require_
 class ApplicationBody(BaseModel):
     offer_id: str
     message: str = ""
+    cover_letter: str = ""
+    document_file_ids: List[str] = []
+
+
+@api.get("/applications/preview")
+async def application_preview(user: dict = Depends(require_roles("EDUCATOR"))):
+    prof = await db.educator_profiles.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
+    files = await db.files.find({"user_id": user["user_id"], "is_deleted": False}, {"_id": 0}).sort("created_at", -1).to_list(50)
+    return {"profile": {"name": user.get("name"), "email": user.get("email"), "phone": user.get("phone"),
+                        "profession": prof.get("profession"), "experience_years": prof.get("experience_years", 0),
+                        "subjects": prof.get("subjects", []), "levels": prof.get("levels", []),
+                        "diplomas": prof.get("diplomas", []), "experiences": prof.get("experiences", []),
+                        "is_verified": prof.get("is_verified", False)},
+            "documents": files}
 
 
 @api.post("/applications")
@@ -362,16 +380,24 @@ async def apply(body: ApplicationBody, user: dict = Depends(require_roles("EDUCA
         raise HTTPException(status_code=404, detail="Offre introuvable")
     if await db.applications.find_one({"offer_id": body.offer_id, "educator_user_id": user["user_id"]}):
         raise HTTPException(status_code=400, detail="Vous avez déjà postulé à cette offre")
+    prof = await db.educator_profiles.find_one({"user_id": user["user_id"]}, {"_id": 0}) or {}
+    docs = []
+    if body.document_file_ids:
+        cursor = db.files.find({"file_id": {"$in": body.document_file_ids}, "user_id": user["user_id"], "is_deleted": False}, {"_id": 0})
+        docs = [{"file_id": f["file_id"], "name": f["original_filename"], "category": f.get("category")} async for f in cursor]
     app_id = new_id("app")
     doc = {"application_id": app_id, "offer_id": body.offer_id, "offer_title": job["title"],
-           "school_user_id": job["school_user_id"], "school_name": job.get("school_name"),
+           "school_user_id": job["school_user_id"], "school_name": job.get("school_name"), "school_slug": job.get("school_slug"),
            "educator_user_id": user["user_id"], "educator_name": user.get("name"),
-           "message": body.message, "status": "Envoyée",
+           "message": body.message, "cover_letter": body.cover_letter, "documents": docs,
+           "snapshot": {"profession": prof.get("profession"), "experience_years": prof.get("experience_years", 0),
+                        "subjects": prof.get("subjects", []), "diplomas": prof.get("diplomas", [])},
+           "status": "Envoyée", "updated_at": now_iso(),
            "timeline": [{"status": "Envoyée", "at": now_iso()}], "created_at": now_iso()}
     await db.applications.insert_one(doc)
     await db.job_offers.update_one({"offer_id": body.offer_id}, {"$inc": {"applications_count": 1}})
     await notify(job["school_user_id"], "application", "Nouvelle candidature",
-                 f"{user.get('name')} a postulé à « {job['title']} »", "/dashboard/school/applications")
+                 f"{user.get('name')} a postulé à « {job['title']} »", "/dashboard/candidatures")
     return {"application": {k: v for k, v in doc.items() if k != "_id"}}
 
 
@@ -406,10 +432,10 @@ async def update_application_status(application_id: str, body: StatusBody,
     if not a or a["school_user_id"] != user["user_id"]:
         raise HTTPException(status_code=404, detail="Candidature introuvable")
     await db.applications.update_one({"application_id": application_id},
-                                     {"$set": {"status": body.status},
+                                     {"$set": {"status": body.status, "updated_at": now_iso()},
                                       "$push": {"timeline": {"status": body.status, "at": now_iso()}}})
     await notify(a["educator_user_id"], "application_status", "Candidature mise à jour",
-                 f"Votre candidature « {a['offer_title']} » : {body.status}", "/dashboard/educator/applications")
+                 f"Votre candidature « {a['offer_title']} » : {body.status}", "/dashboard/candidatures")
     return {"message": "Statut mis à jour"}
 
 
@@ -684,6 +710,7 @@ class MessageBody(BaseModel):
     recipient_user_id: str
     content: str = ""
     attachment_file_id: Optional[str] = None
+    context: Optional[str] = None
 
 
 def _conv_flags(c: dict, uid: str) -> dict:
@@ -747,12 +774,14 @@ async def send_message(body: MessageBody, user: dict = Depends(get_current_user)
 
     preview = body.content if body.content else ("📎 " + (attachment["name"] if attachment else "Pièce jointe"))
     if not conv:
-        conv = {"conversation_id": new_id("conv"), "participants": pair, "blocks": [],
+        conv = {"conversation_id": new_id("conv"), "participants": pair, "blocks": [], "context": body.context,
                 "last_message": preview, "updated_at": now_iso(), "created_at": now_iso()}
         await db.conversations.insert_one(conv)
     else:
-        await db.conversations.update_one({"conversation_id": conv["conversation_id"]},
-                                          {"$set": {"last_message": preview, "updated_at": now_iso()}})
+        upd = {"last_message": preview, "updated_at": now_iso()}
+        if body.context:
+            upd["context"] = body.context
+        await db.conversations.update_one({"conversation_id": conv["conversation_id"]}, {"$set": upd})
     msg = {"message_id": new_id("msg"), "conversation_id": conv["conversation_id"],
            "sender_user_id": user["user_id"], "content": body.content, "attachment": attachment,
            "read": False, "created_at": now_iso()}
@@ -836,10 +865,10 @@ async def submit_verification(body: VerificationBody, user: dict = Depends(get_c
         owned = {f["file_id"] async for f in cursor}
     safe_docs = [d for d in body.documents if d.get("file_id") in owned]
     doc = {"verification_id": new_id("verif"), "user_id": user["user_id"], "user_name": user.get("name"),
-           "documents": safe_docs, "status": "En cours de vérification", "created_at": now_iso()}
+           "role": user.get("role"), "documents": safe_docs, "status": "En cours de vérification", "created_at": now_iso()}
     await db.verifications.insert_one(doc)
-    await db.educator_profiles.update_one({"user_id": user["user_id"]},
-                                          {"$set": {"verification_status": "En cours de vérification"}})
+    coll = db.schools if user.get("role") == "SCHOOL" else db.educator_profiles
+    await coll.update_one({"user_id": user["user_id"]}, {"$set": {"verification_status": "En cours de vérification"}})
     return {"verification": {k: v for k, v in doc.items() if k != "_id"}}
 
 
@@ -1047,10 +1076,12 @@ async def admin_update_verification(verification_id: str, body: StatusBody,
     status = body.status  # Vérifié / Rejeté
     await db.verifications.update_one({"verification_id": verification_id}, {"$set": {"status": status}})
     is_verified = status == "Vérifié"
-    await db.educator_profiles.update_one({"user_id": v["user_id"]},
-                                          {"$set": {"is_verified": is_verified, "verification_status": status}})
+    target_user = await db.users.find_one({"user_id": v["user_id"]}, {"_id": 0, "role": 1})
+    is_school = (target_user or {}).get("role") == "SCHOOL"
+    coll = db.schools if is_school else db.educator_profiles
+    await coll.update_one({"user_id": v["user_id"]}, {"$set": {"is_verified": is_verified, "verification_status": status}})
     await notify(v["user_id"], "verification",
-                 "Profil vérifié" if is_verified else "Vérification rejetée",
+                 ("Établissement vérifié" if is_school else "Profil vérifié") if is_verified else "Vérification rejetée",
                  "Votre profil a été validé ✓" if is_verified else "Votre demande de vérification a été rejetée", "")
     return {"message": "ok"}
 
@@ -1206,6 +1237,7 @@ DEFAULT_PLANS = {
 
 
 app.include_router(auth.router)
+app.include_router(schools_router)
 app.include_router(api)
 
 app.add_middleware(
@@ -1228,6 +1260,9 @@ async def startup():
     await db.login_attempts.create_index("email")
     await auth.seed_admin()
     await seed_demo_data()
+    await enrich_schools()
+    await db.schools.create_index("slug")
+    await db.school_follows.create_index([("user_id", 1), ("school_id", 1)])
     # backfill lat/lng for educator profiles missing coordinates
     async for p in db.educator_profiles.find({"$or": [{"lat": {"$exists": False}}, {"lat": None}]}, {"_id": 0, "user_id": 1, "region": 1}):
         lat, lng = region_latlng(p.get("region", ""), p["user_id"])

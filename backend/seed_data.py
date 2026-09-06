@@ -185,6 +185,8 @@ async def seed_demo_data():
                     "created_at": now_iso(), "updated_at": now_iso(),
                 })
 
+    await enrich_schools()
+
     # demo parent + adult learner accounts
     for email, name, role in [("parent@askool.sn", "Amadou Diagne", "PARENT"),
                               ("apprenant@askool.sn", "Sokhna Mbaye", "ADULT_LEARNER")]:
@@ -194,3 +196,101 @@ async def seed_demo_data():
             "email_verified": True, "is_premium": False, "token_version": 0,
             "created_at": now_iso(), "deleted": False,
         })
+
+
+SCHOOL_ENRICH = {
+    "Groupe Scolaire Les Pédagogues": {
+        "slug": "groupe-scolaire-les-pedagogues", "commercial_name": "Les Pédagogues", "school_type": "Lycée",
+        "status": "Privé laïc", "founded_year": 1998, "students_count": 1200, "teachers_count": 85,
+        "levels": ["Préscolaire", "Primaire", "Collège", "Lycée"], "languages": ["Français", "Anglais"],
+        "education_system": "Programme sénégalais", "city": "Dakar", "district": "Sacré-Cœur 3",
+        "phone": "+221 33 825 00 00", "email": "contact@lespedagogues.sn", "website": "https://www.lespedagogues.sn",
+        "whatsapp": "+221 77 800 00 00", "socials": {"facebook": "https://facebook.com/lespedagogues", "linkedin": "https://linkedin.com/company/lespedagogues"},
+        "subjects": ["Mathématiques", "Français", "Anglais", "Physique-Chimie", "SVT", "Histoire-Géographie", "Informatique"],
+        "programs": "Programme national sénégalais renforcé, préparation BFEM et Baccalauréat, section bilingue à partir du CI.",
+        "methods": "Pédagogie active, classes à effectifs réduits (25 élèves max), suivi individualisé et tutorat entre pairs.",
+        "history": "Fondé en 1998 par un collectif d'enseignants, le Groupe Scolaire Les Pédagogues accueille aujourd'hui plus de 1200 élèves de la maternelle à la terminale.",
+        "mission": "Former des citoyens autonomes, curieux et responsables, ancrés dans leur culture et ouverts sur le monde.",
+        "values": "Excellence, bienveillance, rigueur, solidarité.",
+        "pedagogy": "Approche par compétences, évaluation continue, projets interdisciplinaires et ateliers numériques.",
+        "school_life": ["Club de robotique", "Journal scolaire", "Équipe de football", "Chorale", "Journées culturelles", "Olympiades de maths"],
+        "infrastructures": ["45 salles de classe climatisées", "Laboratoire de sciences", "Bibliothèque", "Salle informatique (40 postes)", "Terrain de sport", "Cantine", "Infirmerie"],
+        "services": ["Transport scolaire", "Restauration", "Études surveillées", "Accompagnement pédagogique", "Garderie"],
+        "recruiting": ["Recrute actuellement", "Recrutement permanent", "Recrutement de vacataires"],
+        "contract_types": ["CDI", "CDD", "Vacataire", "Temps plein"],
+        "cover": "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1600&q=80",
+        "logo": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=300&q=80",
+        "gallery": [
+            {"url": "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=900&q=80", "caption": "Salle de classe primaire", "category": "Salles de classe"},
+            {"url": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=900&q=80", "caption": "Laboratoire de sciences", "category": "Infrastructures"},
+            {"url": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=900&q=80", "caption": "Journée culturelle", "category": "Événements"},
+            {"url": "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=900&q=80", "caption": "Tournoi inter-classes", "category": "Vie scolaire"},
+        ],
+    },
+    "Institution Sainte-Marie": {
+        "slug": "institution-sainte-marie", "commercial_name": "Sainte-Marie de Thiès", "school_type": "Collège",
+        "status": "Privé catholique", "founded_year": 1965, "students_count": 800, "teachers_count": 52,
+        "levels": ["Primaire", "Collège", "Lycée"], "languages": ["Français"],
+        "education_system": "Programme sénégalais", "city": "Thiès", "district": "Centre-ville",
+        "phone": "+221 33 951 00 00", "email": "secretariat@saintemarie-thies.sn", "website": "https://www.saintemarie-thies.sn",
+        "socials": {"facebook": "https://facebook.com/saintemariethies"},
+        "subjects": ["Français", "Mathématiques", "Histoire-Géographie", "Anglais", "Éducation religieuse", "Philosophie"],
+        "programs": "Programme national, préparation au BFEM et au Baccalauréat séries L et S.",
+        "methods": "Enseignement exigeant et bienveillant, accompagnement spirituel et humain.",
+        "history": "Créée en 1965 par les Sœurs de Saint-Joseph de Cluny, l'Institution est une référence de l'enseignement catholique à Thiès.",
+        "mission": "Éduquer la personne dans toutes ses dimensions : intellectuelle, humaine et spirituelle.",
+        "values": "Respect, travail, foi, ouverture.",
+        "pedagogy": "Suivi personnalisé, études dirigées, culture de l'effort.",
+        "school_life": ["Aumônerie", "Théâtre", "Basket-ball", "Club d'anglais"],
+        "infrastructures": ["30 salles de classe", "Bibliothèque", "Chapelle", "Terrain de basket", "Salle polyvalente"],
+        "services": ["Restauration", "Études du soir", "Accompagnement pédagogique"],
+        "recruiting": ["Recrutement permanent"], "contract_types": ["CDI", "CDD"],
+        "cover": "https://images.unsplash.com/photo-1562774053-701939374585?w=1600&q=80",
+        "logo": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=300&q=80",
+        "gallery": [
+            {"url": "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=900&q=80", "caption": "Cour de récréation", "category": "Vie scolaire"},
+            {"url": "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=900&q=80", "caption": "Salle de classe", "category": "Salles de classe"},
+        ],
+    },
+    "Cours Privé El Hadji Malick": {
+        "slug": "cours-prive-el-hadji-malick", "commercial_name": "CPEHM", "school_type": "École primaire",
+        "status": "Privé franco-arabe", "founded_year": 2008, "students_count": 450, "teachers_count": 30,
+        "levels": ["Préscolaire", "Primaire", "Collège"], "languages": ["Français", "Arabe"],
+        "education_system": "Programme franco-arabe", "city": "Dakar", "district": "Grand Dakar",
+        "phone": "+221 33 864 00 00", "email": "contact@cpehm.sn", "website": "",
+        "whatsapp": "+221 78 100 00 00", "socials": {"instagram": "https://instagram.com/cpehm"},
+        "subjects": ["Arabe", "Français", "Mathématiques", "Éducation religieuse", "Anglais"],
+        "programs": "Double cursus : programme sénégalais et enseignement de la langue arabe et du Coran.",
+        "methods": "Mémorisation active, ateliers de langue, petits groupes.",
+        "history": "Ouvert en 2008 à Grand Dakar pour offrir un enseignement bilingue de qualité aux familles du quartier.",
+        "mission": "Réussite scolaire et épanouissement dans le respect des valeurs.",
+        "values": "Discipline, respect, partage.",
+        "pedagogy": "Bilinguisme équilibré français-arabe, encadrement de proximité.",
+        "school_life": ["Concours de récitation", "Football", "Sorties pédagogiques"],
+        "infrastructures": ["15 salles de classe", "Salle de prière", "Cour aménagée", "Salle informatique"],
+        "services": ["Transport scolaire", "Cantine", "Cours du soir"],
+        "recruiting": ["Recrute actuellement", "Recrutement de vacataires"], "contract_types": ["CDD", "Vacataire", "Temps partiel"],
+        "cover": "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1600&q=80",
+        "logo": "https://images.unsplash.com/photo-1519452635265-7b1fbfd1e4e0?w=300&q=80",
+        "gallery": [
+            {"url": "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=900&q=80", "caption": "Classe de CI", "category": "Salles de classe"},
+        ],
+    },
+}
+
+
+async def enrich_schools():
+    """Idempotent: fills rich profile fields for schools that still lack a slug."""
+    async for s in db.schools.find({"slug": {"$exists": False}}, {"_id": 0}):
+        extra = dict(SCHOOL_ENRICH.get(s["name"], {}))
+        if not extra:
+            base = "".join(ch if ch.isalnum() else "-" for ch in s["name"].lower()).strip("-")
+            extra["slug"] = base or s["school_id"]
+        lat, lng = region_latlng(s.get("region", ""), s["user_id"])
+        extra.setdefault("lat", lat); extra.setdefault("lng", lng)
+        extra.setdefault("views", 120); extra.setdefault("contact_visibility", "public")
+        extra.setdefault("hide_exact_location", False)
+        for k in ["levels", "languages", "subjects", "school_life", "infrastructures", "services", "gallery", "recruiting", "contract_types"]:
+            extra.setdefault(k, [])
+        await db.schools.update_one({"school_id": s["school_id"]}, {"$set": extra})
+        await db.job_offers.update_many({"school_user_id": s["user_id"]}, {"$set": {"school_slug": extra["slug"]}})

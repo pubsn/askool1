@@ -76,6 +76,16 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Profil Parent / Apprenant (Paramètres `/dashboard/parametres`) : carte « Photo de profil » + upload avatar via nouvel endpoint `PUT /api/users/me/avatar` (met à jour `users.avatar_url`, renvoyé par `/auth/me`) ; `refreshUser()` rafraîchit le contexte
 - Vérifié : endpoint persiste l'avatar (curl), boutons d'upload présents sur les deux pages
 
+## Implemented (2026-06 — Module Écoles / Offres / Profils établissements) — vérifié iteration_9 (17/17 backend + UI OK)
+- Backend `schools_routes.py` : modèle école enrichi (couverture, slug, identité, effectifs, niveaux, langues, présentation/histoire/mission/valeurs/pédagogie, enseignement, vie scolaire, infrastructures, services, galerie, contacts + réseaux, `contact_visibility` public/after_contact/private, `hide_exact_location`, recrutement, contrats)
+- Endpoints : `GET /schools` (recherche + filtres), `GET /schools/meta`, `GET /schools/slug/{slug}` (profil public + contact filtré + offres + écoles similaires + vues), `PUT/GET /schools/me`, `GET /schools/me/overview`, `POST /schools/{id}/follow`, `GET /schools/following/mine`, `GET /schools/favorites/mine`, `GET /schools/recommended`, `POST /proposals` (+ conversation avec contexte), `GET /proposals/mine|received`, `PUT /proposals/{id}/status`, `GET /recommendations/jobs` (score % + raisons, proches de moi)
+- Candidatures : `GET /applications/preview`, `POST /applications` avec `cover_letter`, `document_file_ids`, snapshot profil, `updated_at` ; notifications corrigées ; followers notifiés à chaque nouvelle offre publiée (`new_offer`)
+- Messagerie : champ `context` sur conversation (Candidature — X / Proposition de services) affiché dans Messages
+- Vérification écoles : `/verifications` + admin gèrent SCHOOL → badge « Établissement vérifié »
+- Confidentialité éducateur : `privacy` {contact, location, experience} appliqué dans `GET /educators/{id}`
+- Frontend : `/ecoles` (FindSchools, aussi `/dashboard/ecoles`), `/ecoles/:slug` (SchoolPublicProfile : couverture, logo, carte Leaflet + itinéraire, galerie zoom/catégories, offres, proposer mes services, contacter, favoris, suivre, similaires), `SchoolProfile` en 8 onglets, `Proposals.jsx` (`/dashboard/propositions`), Applications avec timeline, JobDetail flux 2 étapes (aperçu → envoi → confirmation), FindJobs onglets Toutes/Nouvelles/Recommandées/Proches (aussi `/dashboard/emplois`), Favoris (écoles favorites / suivies / éducateurs), accueil école (vue d'ensemble) et éducateur (2 blocs), nav « Écoles »
+- Seed : `enrich_schools()` idempotent enrichit les écoles démo (slug, couverture, galerie, etc.)
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 const NAV = [
   { label: "Accueil", to: "/" },
   { label: "Trouver un éducateur", to: "/educateurs" },
+  { label: "Écoles", to: "/ecoles" },
   { label: "Trouver un emploi", to: "/emplois" },
   { label: "Pour les écoles", to: "/pour-les-ecoles" },
   { label: "Comment ça marche", to: "/comment-ca-marche" },

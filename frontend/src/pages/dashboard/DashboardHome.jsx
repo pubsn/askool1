@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, FileText, Inbox, Calendar, Star, TrendingUp, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search } from "lucide-react";
+import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search, Building2, Heart, MessageSquare } from "lucide-react";
 import { StatCard, PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
@@ -35,35 +35,50 @@ function EducatorHome({ navigate, user }) {
         <StatCard icon={Calendar} label="Cours à venir" value={bookings.filter((b) => b.status !== "Terminé").length} accent="green" testId="stat-bookings" />
         <StatCard icon={Star} label="Note moyenne" value={prof?.rating || 0} testId="stat-rating" />
       </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <ActionCard icon={Briefcase} title="Opportunités" onClick={() => navigate("/dashboard/opportunites")} />
-        <ActionCard icon={FileText} title="Mes candidatures" onClick={() => navigate("/dashboard/candidatures")} />
-        <ActionCard icon={CreditCard} title="Passer Premium" onClick={() => navigate("/dashboard/abonnement")} />
+      <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div data-testid="block-pro-opportunities" className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold text-gray-900"><Briefcase size={18} className="text-askool-blue" /> Mes opportunités professionnelles</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ActionCard icon={Search} title="Trouver un emploi" onClick={() => navigate("/dashboard/emplois")} />
+            <ActionCard icon={Building2} title="Trouver une école" onClick={() => navigate("/dashboard/ecoles")} />
+            <ActionCard icon={FileText} title="Mes candidatures" onClick={() => navigate("/dashboard/candidatures")} />
+            <ActionCard icon={Heart} title="Écoles favorites & suivies" onClick={() => navigate("/dashboard/favoris")} />
+          </div>
+        </div>
+        <div data-testid="block-edu-services" className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 flex items-center gap-2 font-display text-lg font-semibold text-gray-900"><Users size={18} className="text-askool-orangehover" /> Mes services éducatifs</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ActionCard icon={Inbox} title="Demandes reçues" onClick={() => navigate("/dashboard/opportunites")} />
+            <ActionCard icon={Calendar} title="Cours & disponibilités" onClick={() => navigate("/dashboard/reservations")} />
+            <ActionCard icon={Star} title="Avis" onClick={() => navigate("/dashboard/avis")} />
+            <ActionCard icon={CreditCard} title="Passer Premium" onClick={() => navigate("/dashboard/abonnement")} />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 function SchoolHome({ navigate, user }) {
-  const [jobs, setJobs] = useState([]);
-  const [apps, setApps] = useState([]);
-  useEffect(() => {
-    api.get("/jobs/mine").then(({ data }) => setJobs(data.results)).catch(() => {});
-    api.get("/applications/received").then(({ data }) => setApps(data.results)).catch(() => {});
-  }, []);
+  const [ov, setOv] = useState({});
+  useEffect(() => { api.get("/schools/me/overview").then(({ data }) => setOv(data)).catch(() => {}); }, []);
   return (
     <div>
-      <PageHeader title={`Bonjour, ${user?.name} 🏫`} subtitle="Gérez vos recrutements en un coup d'œil." action={<Button data-testid="publish-cta" onClick={() => navigate("/dashboard/publier")} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><PlusCircle size={16} /> Publier une offre</Button>} />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Briefcase} label="Offres actives" value={jobs.filter((j) => j.status === "published").length} testId="stat-active-jobs" />
-        <StatCard icon={Inbox} label="Candidatures reçues" value={apps.length} accent="orange" testId="stat-received" />
-        <StatCard icon={Eye} label="Vues des offres" value={jobs.reduce((a, j) => a + (j.views || 0), 0)} accent="green" testId="stat-job-views" />
-        <StatCard icon={ShieldCheck} label="Recrutements" value={apps.filter((a) => a.status === "Acceptée").length} testId="stat-hires" />
+      <PageHeader title={`Bonjour, ${user?.name} 🏫`} subtitle="Vue d'ensemble de votre établissement et de vos recrutements." action={<Button data-testid="publish-cta" onClick={() => navigate("/dashboard/publier")} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><PlusCircle size={16} /> Publier une offre</Button>} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard icon={Eye} label="Vues du profil école" value={ov.profile_views || 0} testId="stat-profile-views" />
+        <StatCard icon={Briefcase} label="Offres actives" value={ov.active_offers || 0} accent="orange" testId="stat-active-jobs" />
+        <StatCard icon={Inbox} label="Candidatures reçues" value={ov.applications || 0} accent="green" testId="stat-received" />
+        <StatCard icon={Users} label="Propositions de services" value={ov.proposals || 0} testId="stat-proposals" />
+        <StatCard icon={Heart} label="Candidats favoris" value={ov.favorite_candidates || 0} accent="orange" testId="stat-fav-candidates" />
+        <StatCard icon={MessageSquare} label="Messages non lus" value={ov.unread_messages || 0} accent="green" testId="stat-unread" />
       </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        <ActionCard icon={Search} title="Explorer la CVthèque" onClick={() => navigate("/dashboard/cvtheque")} />
-        <ActionCard icon={FileText} title="Voir les candidatures" onClick={() => navigate("/dashboard/candidatures")} />
-        <ActionCard icon={Briefcase} title="Mes offres" onClick={() => navigate("/dashboard/offres")} />
+      {ov.verification_status && ov.verification_status !== "Vérifié" && <div data-testid="verif-banner" className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"><span><ShieldCheck size={14} className="mr-1 inline" /> Statut : {ov.verification_status}. Faites vérifier votre établissement pour renforcer la confiance des éducateurs.</span><Button size="sm" variant="outline" onClick={() => navigate("/dashboard/etablissement")} className="rounded-lg">Demander la vérification</Button></div>}
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ActionCard icon={Building2} title="Mon établissement" onClick={() => navigate("/dashboard/etablissement")} />
+        <ActionCard icon={FileText} title="Candidatures" onClick={() => navigate("/dashboard/candidatures")} />
+        <ActionCard icon={Users} title="Propositions reçues" onClick={() => navigate("/dashboard/propositions")} />
+        <ActionCard icon={Search} title="CVthèque" onClick={() => navigate("/dashboard/cvtheque")} />
       </div>
     </div>
   );

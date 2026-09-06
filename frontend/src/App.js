@@ -16,6 +16,9 @@ import FindEducators from "@/pages/FindEducators";
 import EducatorProfile from "@/pages/EducatorProfile";
 import FindJobs from "@/pages/FindJobs";
 import JobDetail from "@/pages/JobDetail";
+import FindSchools from "@/pages/FindSchools";
+import SchoolPublicProfile from "@/pages/SchoolPublicProfile";
+import Proposals from "@/pages/dashboard/Proposals";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
@@ -63,6 +66,8 @@ function AppRouter() {
       <Route path="/educateurs/:userId" element={<EducatorProfile />} />
       <Route path="/emplois" element={<FindJobs />} />
       <Route path="/emplois/:offerId" element={<JobDetail />} />
+      <Route path="/ecoles" element={<FindSchools />} />
+      <Route path="/ecoles/:slug" element={<SchoolPublicProfile />} />
 
       <Route path="/connexion" element={<Login />} />
       <Route path="/inscription" element={<Register />} />
@@ -76,6 +81,9 @@ function AppRouter() {
         <Route path="candidatures" element={<Applications />} />
         <Route path="opportunites" element={<Opportunities />} />
         <Route path="tuteurs" element={<FindEducators embedded />} />
+        <Route path="ecoles" element={<FindSchools embedded />} />
+        <Route path="emplois" element={<FindJobs embedded />} />
+        <Route path="propositions" element={<Proposals />} />
         <Route path="reservations" element={<Bookings />} />
         <Route path="favoris" element={<Favorites />} />
         <Route path="avis" element={<Reviews />} />

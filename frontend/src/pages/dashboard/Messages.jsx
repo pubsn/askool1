@@ -125,7 +125,7 @@ export default function Messages() {
                 className={cn("relative flex w-full items-center gap-3 border-b border-gray-50 p-4 text-left hover:bg-gray-50", active?.conversation_id === c.conversation_id && "bg-askool-bluelight")}>
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-askool-blue text-sm font-semibold text-white">{(c.other_name || "?").charAt(0)}</span>
                   {c.other_online && <span data-testid={`online-dot-${c.conversation_id}`} className="absolute bottom-0 left-7 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />}
-                <div className="min-w-0 flex-1"><div className="flex items-center gap-1 truncate font-medium text-gray-900">{c.other_name}{c.is_blocked && <Ban size={12} className="text-red-400" />}</div><div className="truncate text-xs text-muted-foreground">{c.last_message}</div></div>
+                <div className="min-w-0 flex-1"><div className="flex items-center gap-1 truncate font-medium text-gray-900">{c.other_name}{c.is_blocked && <Ban size={12} className="text-red-400" />}</div>{c.context && <div className="truncate text-[11px] font-medium text-askool-orangehover">{c.context}</div>}<div className="truncate text-xs text-muted-foreground">{c.last_message}</div></div>
               </button>
             ))}
           </div>
@@ -135,6 +135,7 @@ export default function Messages() {
                 <div className="flex items-center justify-between border-b border-gray-100 p-4">
                   <div className="flex items-center gap-2">
                     <span className="font-display font-semibold text-gray-900">{active.other_name}</span>
+                    {active.context && <span data-testid="conversation-context" className="hidden rounded-md bg-askool-orangelight px-2 py-0.5 text-xs font-medium text-askool-orangehover sm:inline">{active.context}</span>}
                     <span data-testid="presence-status" className={cn("flex items-center gap-1 text-xs", active.other_online ? "text-emerald-600" : "text-muted-foreground")}>
                       {active.other_online && <span className="h-2 w-2 rounded-full bg-emerald-500" />}
                       {lastSeenText(active.other_last_seen)}

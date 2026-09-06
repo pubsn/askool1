@@ -36,7 +36,7 @@ export default function EducatorProfileEdit() {
   const [f, setF] = useState({
     profession: "", bio: "", region: "", location: "", subjects: [], levels: [], languages: [],
     specialties: [], services: [], experience_years: 0, hourly_rate: 0, photo: "", available_now: true,
-    diplomas: [], experiences: [], availability: { days: [], hours: "", zones: [] },
+    diplomas: [], experiences: [], availability: { days: [], hours: "", zones: [] }, privacy: {},
   });
 
   useEffect(() => {
@@ -132,6 +132,17 @@ export default function EducatorProfileEdit() {
               ))}
             </div>
           )}
+        </Card>
+        <Card title="Confidentialité">
+          <p className="mb-3 text-sm text-muted-foreground">Choisissez ce que les visiteurs de votre profil peuvent voir. Vos documents (CV, diplômes, pièces d'identité) restent toujours privés.</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[["contact", "Coordonnées (téléphone, email)"], ["location", "Localisation précise"], ["experience", "Diplômes & expériences"]].map(([k, label]) => (
+              <div key={k}><Label className="text-sm">{label}</Label>
+                <select data-testid={`privacy-${k}`} value={f.privacy?.[k] || "public"} onChange={(e) => set("privacy", { ...(f.privacy || {}), [k]: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">
+                  <option value="public">Visible publiquement</option><option value="after_contact">Visible après contact</option><option value="private">Privé</option>
+                </select></div>
+            ))}
+          </div>
         </Card>
         <Card title="Vérification du profil">
           <p className="mb-3 text-sm text-muted-foreground">Soumettez vos documents (diplômes, pièce d'identité) pour obtenir le badge « Profil vérifié ». Vos documents restent privés.</p>

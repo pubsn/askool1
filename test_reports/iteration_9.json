@@ -1,0 +1,74 @@
+{
+  "summary": "Comprehensive backend + frontend testing of the new ASKOOL Schools directory / public profile / proposals / applications / follow-favorite / recommendations / educator-privacy / school-verification / messages-context module. 17/17 pytest cases pass on the live preview URL; all listed frontend acceptance criteria verified via Playwright on desktop viewport.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "School public profile — gallery zoom dialog", "issues": ["Radix DialogContent missing DialogTitle (accessibility error in console) and Description/aria-describedby warning. Also occurs on propose-dialog and apply-dialog. Non-blocking but must be fixed for screen-reader compliance."]}
+    ]
+  },
+  "test_results": {
+    "backend_pytest": {
+      "file": "/app/backend/tests/test_schools_module.py",
+      "result": "17 passed / 0 failed",
+      "junit": "/app/test_reports/pytest/schools_module.xml",
+      "covered": [
+        "GET /api/schools (filters + no phone/email leak + offers_count/followers_count/slug)",
+        "GET /api/schools/meta (school_types, school_levels, recruiting, contract_types, proposal_types)",
+        "GET /api/schools/slug/institution-sainte-marie anonymous (school/contact/offers/similar/is_favorite=false + view counter increments)",
+        "PUT /api/schools/me contact_visibility=after_contact -> anonymous slug fetch: contact.phone='' & contact_unlocked=false; restored to public",
+        "GET /api/schools/me/overview returns profile_views/active_offers/applications/proposals/favorite_candidates/unread_messages/verification_status",
+        "POST /api/schools/{id}/follow toggles; GET /api/schools/following/mine lists it",
+        "POST /api/favorites target_type=school toggles; GET /api/schools/favorites/mine",
+        "POST /api/proposals creates proposal+conversation (context set); GET /api/proposals/mine; PUT /api/proposals/{id}/status invalid=>400",
+        "GET /api/applications/preview; POST /api/applications with cover_letter+snapshot+timeline; duplicate=>400; PUT /applications/{id}/status='Consultée' -> updated_at + timeline appended",
+        "Follow notification: educator receives 'new_offer' notification when followed SCHOOL POSTs published /api/jobs",
+        "GET /api/recommendations/jobs as EDUCATOR (recommended[] with match_score/match_reasons + nearby[]); 403 for PARENT",
+        "GET /api/jobs supports has_salary / since_days / max_experience filters",
+        "POST /api/messages with context field -> conversation.context visible in GET /api/conversations",
+        "Educator privacy: PUT /api/educators/me privacy={contact:'private',experience:'private'} -> anonymous GET /api/educators/{id} contact.unlocked=false and empty diplomas/experiences; reset works",
+        "School verification: POST /api/verifications -> schools.verification_status='En cours de vérification'; ADMIN PUT /api/admin/verifications/{id} status='Vérifié' -> is_verified=true"
+      ]
+    },
+    "frontend_playwright": {
+      "public_/ecoles": "schools-grid rendered with 4 school-card-*, school-search-query filters (Sainte->1), toggle-school-filters + reset-school-filters work",
+      "/ecoles/institution-sainte-marie": "section-about, section-teaching, section-gallery, section-offers, section-location, section-contact, school-map, similar-schools, gallery-item-0 -> gallery-zoom dialog all present; h1='Institution Sainte-Marie'",
+      "educator_school_actions": "school-fav-btn toggles text ('Favori' <-> 'Ajouter aux favoris'); school-follow-btn toggles ('Suivi · N' <-> 'Suivre · N'); school-propose-btn opens propose-dialog; prop-message + prop-send -> redirect to /dashboard/propositions with 2 proposal-* cards",
+      "educator_dashboard_sidebar": "'Trouver un emploi', 'Trouver une école', 'Mes propositions' all present; home shows block-pro-opportunities + block-edu-services",
+      "/dashboard/emplois": "jobs-tab-reco present, click reveals 11 job-match-* badges",
+      "/dashboard/ecoles": "schools-grid rendered inside dashboard layout",
+      "apply_flow": "apply-btn -> apply-dialog (apply-profile-summary OK) -> apply-cover-letter -> apply-next -> apply-preview -> confirm-apply-btn -> apply-success ('Candidature envoyée !')",
+      "/dashboard/candidatures (educator)": "application-timeline entries rendered",
+      "school_dashboard_home": "stat-profile-views, stat-proposals, stat-unread all present",
+      "/dashboard/etablissement": "All 8 tabs found: school-tab-Identité/Localisation/Contact/Présentation/Enseignement/Infrastructures/Galerie/Vérification; save-school-btn + view-public-school present",
+      "/dashboard/propositions (school)": "2 proposal-* cards + 2 prop-status-* selects",
+      "/dashboard/candidatures (school)": "cover letter 'TEST_ ma lettre UI' visible on application card",
+      "/dashboard/favoris": "fav-tab-schools + fav-tab-following + fav-tab-educators all present",
+      "/dashboard/messages": "conversation-context badge rendered for the proposal conversation"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_schools_module.py",
+    "/app/test_reports/pytest/schools_module.xml"
+  ],
+  "action_items": [
+    "A11y: add <DialogTitle> (and optional <DialogDescription>) to gallery-zoom, propose-dialog and apply-dialog to silence Radix console errors and support screen readers.",
+    "Optional: consider removing test data created during testing (see seed_data_creation)."
+  ],
+  "critical_code_review_comments": [
+    "schools_routes.decorate() is invoked per document in a loop (list_schools returns page_size docs, recommended_schools iterates full collection) and issues 2 separate count_documents queries per school (offers_count + followers_count). For scale (>50 schools) this is N+1; consider a $lookup aggregation or batched $group.",
+    "recommended_schools() and recommended_jobs() iterate to_list(200)/(300) without pagination and score in Python — fine now, but plan for aggregation-based ranking as data grows.",
+    "PUT /schools/me regenerates slug from name on every save even when name hasn't changed (unique_slug is called unconditionally). If a school renames back-and-forth it may accumulate '-2', '-3' suffixes and break shared/bookmarked public URLs. Consider keeping the existing slug when name is unchanged.",
+    "PUT /schools/me updates job_offers.school_name/school_slug via update_many — good — but does NOT rewrite applications.school_slug/school_name snapshots (already stored on POST /applications). Candidates may see outdated names. Acceptable if snapshot is intentional; document it.",
+    "public_contact() returns email/phone if visibility='public' regardless of whether the school is verified. Consider gating public contact behind is_verified to reduce spam scraping.",
+    "GET /schools/slug/{slug} increments views on every non-owner request with no debouncing — same viewer refreshing inflates numbers; consider a per-IP or per-user daily cap."
+  ],
+  "updated_files": ["/app/backend/tests/test_schools_module.py"],
+  "success_rate": {"backend": "100% (17/17)", "frontend": "100% (all listed acceptance criteria pass)"},
+  "test_credentials": "See /app/memory/test_credentials.md — Educator awa.ndiaye@askool.sn / Askool2026!, School contact.institution1@askool.sn / Askool2026!, Admin pubsn01@gmail.com / Askool2026!",
+  "seed_data_creation": "Backend test suite creates: 2 TEST_ job offers (TEST_Poste_*, TEST_Notif_*) owned by contact.institution1; 1 TEST_ service proposal from awa.ndiaye; 1 TEST_ application from awa.ndiaye on the created offer; 1 verification request for contact.institution1 (then approved by admin so school is now is_verified=true); privacy on awa.ndiaye is reset to {} post-test. IMPORTANT: contact.institution1 school was re-saved via PUT with the same fields — its slug/name should be unchanged, but the school is now marked is_verified=true which is a persistent side effect (was requested by test scenario).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All new Schools/Proposals/Applications/Recommendations/Privacy/Verification endpoints and their UI counterparts are validated. Pytest file /app/backend/tests/test_schools_module.py is idempotent (re-toggles follow/favorite if already set, creates fresh offer per run). Frontend routes verified: /ecoles, /ecoles/:slug, /dashboard, /dashboard/emplois, /dashboard/ecoles, /dashboard/propositions, /dashboard/candidatures, /dashboard/favoris, /dashboard/messages, /dashboard/etablissement, /emplois/:offer_id (apply flow). Login route is /connexion (not /login)."
+}

@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   LayoutDashboard, User, FileText, Calendar, Heart, MessageSquare, Star,
   CreditCard, Settings, PlusCircle, Briefcase, Users, Search, Building2,
-  Bell, LogOut, GraduationCap, ShieldCheck, Home,
+  Bell, LogOut, GraduationCap, ShieldCheck, Home, HandHelping,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "@/components/layout/PublicLayout";
@@ -14,8 +14,11 @@ const MENUS = {
   EDUCATOR: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mon profil", to: "/dashboard/profil", icon: User },
+    { label: "Trouver un emploi", to: "/dashboard/emplois", icon: Search },
+    { label: "Trouver une école", to: "/dashboard/ecoles", icon: Building2 },
     { label: "Opportunités", to: "/dashboard/opportunites", icon: Briefcase },
     { label: "Mes candidatures", to: "/dashboard/candidatures", icon: FileText },
+    { label: "Mes propositions", to: "/dashboard/propositions", icon: HandHelping },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
     { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
@@ -29,6 +32,7 @@ const MENUS = {
     { label: "Publier une offre", to: "/dashboard/publier", icon: PlusCircle },
     { label: "Mes offres", to: "/dashboard/offres", icon: Briefcase },
     { label: "Candidatures", to: "/dashboard/candidatures", icon: FileText },
+    { label: "Propositions reçues", to: "/dashboard/propositions", icon: HandHelping },
     { label: "CVthèque", to: "/dashboard/cvtheque", icon: Search },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
     { label: "Abonnement", to: "/dashboard/abonnement", icon: CreditCard },

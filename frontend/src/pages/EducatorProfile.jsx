@@ -128,9 +128,11 @@ export default function EducatorProfile() {
             </Section>
             <Section icon={Award} title="Formation & Expérience">
               <ul className="space-y-2">
+                {!p.diplomas?.length && !p.experiences?.length && <li className="text-sm text-muted-foreground" data-testid="experience-private">Informations visibles après un premier contact.</li>}
                 {p.diplomas?.map((d, i) => <li key={i} className="text-sm text-gray-700">🎓 {d.title} — {d.school} ({d.year})</li>)}
                 {p.experiences?.map((e, i) => <li key={i} className="text-sm text-gray-700">💼 {e.role} — {e.place} ({e.years} ans)</li>)}
               </ul>
+              {p.contact?.unlocked && (p.contact.phone || p.contact.email) && <p className="mt-3 text-sm text-gray-700" data-testid="educator-contact-info">📞 {p.contact.phone} · ✉️ {p.contact.email}</p>}
             </Section>
             <Section icon={Award} title={`Avis (${data.reviews?.length || 0})`}>
               {data.reviews?.length ? (
