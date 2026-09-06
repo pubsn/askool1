@@ -20,7 +20,7 @@ import auth
 from auth import get_current_user, require_roles
 from constants import (SUBJECTS, LEVELS, SERVICE_TYPES, REGIONS, LANGUAGES,
                        CONTRACT_TYPES, DIPLOMAS, REGION_COORDS, region_latlng)
-from seed_data import seed_demo_data, enrich_schools
+from seed_data import seed_demo_data, enrich_schools, enrich_practical
 from schools_routes import router as schools_router, optional_user
 from storage import put_object, get_object, init_storage, APP_NAME, MIME_TYPES
 import jwt as _jwt
@@ -447,6 +447,10 @@ class StudentBody(BaseModel):
     location: str = ""
     needs: str = ""
     availability: str = ""
+    current_school: str = ""
+    objectives: str = ""
+    preferences: str = ""
+    birth_year: Optional[int] = None
 
 
 @api.get("/students")
@@ -461,6 +465,23 @@ async def create_student(body: StudentBody, user: dict = Depends(require_roles("
            **body.model_dump(), "created_at": now_iso()}
     await db.students.insert_one(doc)
     return {"student": {k: v for k, v in doc.items() if k != "_id"}}
+
+
+@api.put("/students/{student_id}")
+async def update_student(student_id: str, body: StudentBody, user: dict = Depends(require_roles("PARENT", "ADULT_LEARNER"))):
+    r = await db.students.update_one({"student_id": student_id, "parent_user_id": user["user_id"]},
+                                     {"$set": {**body.model_dump(), "updated_at": now_iso()}})
+    if r.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Élève introuvable")
+    return {"student": await db.students.find_one({"student_id": student_id}, {"_id": 0})}
+
+
+@api.delete("/students/{student_id}")
+async def delete_student(student_id: str, user: dict = Depends(require_roles("PARENT", "ADULT_LEARNER"))):
+    r = await db.students.delete_one({"student_id": student_id, "parent_user_id": user["user_id"]})
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Élève introuvable")
+    return {"message": "Supprimé"}
 
 
 # ================= tutoring requests + matching =================
@@ -1261,6 +1282,7 @@ async def startup():
     await auth.seed_admin()
     await seed_demo_data()
     await enrich_schools()
+    await enrich_practical()
     await db.schools.create_index("slug")
     await db.school_follows.create_index([("user_id", 1), ("school_id", 1)])
     # backfill lat/lng for educator profiles missing coordinates

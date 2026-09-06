@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search, Building2, Heart, MessageSquare, Newspaper } from "lucide-react";
+import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search, Building2, Heart, MessageSquare, Newspaper, Bell } from "lucide-react";
+import SchoolCard from "@/components/SchoolCard";
 import { StatCard, PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
@@ -88,25 +89,45 @@ function SchoolHome({ navigate, user }) {
 }
 
 function ParentHome({ navigate, user, role }) {
-  const [reqs, setReqs] = useState([]);
-  const [bookings, setBookings] = useState([]);
+  const [ov, setOv] = useState({});
+  const [students, setStudents] = useState([]);
+  const [sid, setSid] = useState("");
+  const [reco, setReco] = useState(null);
   useEffect(() => {
-    api.get("/tutoring-requests/mine").then(({ data }) => setReqs(data.results)).catch(() => {});
-    api.get("/bookings/mine").then(({ data }) => setBookings(data.results)).catch(() => {});
+    api.get("/parent/overview").then(({ data }) => setOv(data)).catch(() => {});
+    api.get("/students").then(({ data }) => { setStudents(data.results); if (data.results[0]) setSid(data.results[0].student_id); }).catch(() => {});
   }, []);
+  useEffect(() => { api.get(`/schools/recommended-for-parent${sid ? `?student_id=${sid}` : ""}`).then(({ data }) => setReco(data)).catch(() => setReco({ results: [] })); }, [sid]);
+  const child = students.find((s) => s.student_id === sid);
   return (
     <div>
-      <PageHeader title={`Bonjour, ${user?.name?.split(" ")[0]} 👋`} subtitle="Trouvez le tuteur idéal pour vos besoins." action={<Button data-testid="new-request-cta" onClick={() => navigate("/dashboard/demandes")} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><PlusCircle size={16} /> Nouvelle demande</Button>} />
+      <PageHeader title={`Bonjour, ${user?.name?.split(" ")[0]} 👋`} subtitle="Écoles, tuteurs et actualités pour votre famille." action={<Button data-testid="find-school-cta" onClick={() => navigate("/dashboard/ecoles")} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><Building2 size={16} /> Trouver une école</Button>} />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={FileText} label="Mes demandes" value={reqs.length} testId="stat-requests" />
-        <StatCard icon={Calendar} label="Réservations" value={bookings.length} accent="orange" testId="stat-bookings2" />
-        <StatCard icon={Calendar} label="Cours à venir" value={bookings.filter((b) => b.status === "Confirmé").length} accent="green" testId="stat-upcoming" />
+        <StatCard icon={Users} label="Enfants enregistrés" value={ov.students || 0} testId="stat-children" />
+        <StatCard icon={Bell} label="Écoles suivies" value={ov.following || 0} accent="orange" testId="stat-following" />
+        <StatCard icon={Heart} label="Favoris" value={(ov.favorite_schools || 0) + (ov.favorite_educators || 0)} accent="green" testId="stat-favorites" />
+        <StatCard icon={Newspaper} label="Nouvelles actualités" value={ov.new_posts || 0} testId="stat-new-posts" />
+        <StatCard icon={FileText} label="Demandes en cours" value={ov.pending_requests || 0} accent="orange" testId="stat-pending" />
+        <StatCard icon={MessageSquare} label="Conversations" value={ov.conversations || 0} accent="green" testId="stat-conversations" />
       </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-8 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm" data-testid="parent-recommendations">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-semibold text-gray-900">{child ? `Pour votre enfant — ${child.name}${child.class_level ? ` (${child.class_level})` : ""}` : "Écoles recommandées pour vous"}</h2>
+          {students.length > 1 && <select data-testid="reco-student" value={sid} onChange={(e) => setSid(e.target.value)} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm">{students.map((s) => <option key={s.student_id} value={s.student_id}>{s.name}</option>)}</select>}
+        </div>
+        {reco === null ? <Loader /> : reco.results.filter((r) => r.match_score > 0).length === 0 ? (
+          <p className="text-sm text-muted-foreground">Ajoutez un enfant (classe) et vos préférences (Mon profil) pour obtenir des recommandations.</p>
+        ) : (
+          <><p className="mb-3 text-sm text-muted-foreground">{reco.results.filter((r) => r.match_score >= 40).length} école(s) correspondent à vos critères{reco.level ? ` (niveau ${reco.level})` : ""}.</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{reco.results.filter((r) => r.match_score > 0).slice(0, 3).map((s) => <SchoolCard key={s.school_id} school={s} matchScore={s.match_score} matchReasons={s.match_reasons} />)}</div></>
+        )}
+      </div>
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <ActionCard icon={Search} title="Trouver un tuteur" onClick={() => navigate("/dashboard/tuteurs")} />
-        {role === "PARENT" && <ActionCard icon={Users} title="Mes élèves" onClick={() => navigate("/dashboard/eleves")} />}
+        {role === "PARENT" && <ActionCard icon={Users} title="Mes enfants" onClick={() => navigate("/dashboard/eleves")} />}
         <ActionCard icon={FileText} title="Mes demandes" onClick={() => navigate("/dashboard/demandes")} />
       </div>
+      <div className="mt-6"><NewsFeed /></div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { MapPin, Building2, ShieldCheck, Heart, Bell, BellOff, MessageSquare, Globe, Phone, Mail, Facebook, Instagram, Linkedin, Navigation, GraduationCap, Users, Calendar, Languages, BookOpen, Trophy, School, HandHelping, Image as ImageIcon, Briefcase, Lock, ZoomIn, Newspaper } from "lucide-react";
+import { MapPin, Building2, ShieldCheck, Heart, Bell, BellOff, MessageSquare, Globe, Phone, Mail, Facebook, Instagram, Linkedin, Navigation, GraduationCap, Users, Calendar, Languages, BookOpen, Trophy, School, HandHelping, Image as ImageIcon, Briefcase, Lock, ZoomIn, Newspaper, ClipboardList, HelpCircle, Star } from "lucide-react";
 import { CAT_COLORS } from "@/pages/dashboard/SchoolNews";
 import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
@@ -43,9 +43,16 @@ export default function SchoolPublicProfile() {
   const [prop, setProp] = useState({ service_type: "Enseignement", subject: "", level: "", availability: "", experience: "", message: "" });
   const [ptypes, setPtypes] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [smeta, setSmeta] = useState({ contact_subjects: [] });
+  const [subject, setSubject] = useState("Inscription");
+  const [openEnroll, setOpenEnroll] = useState(false);
+  const [students, setStudents] = useState([]);
+  const [enr, setEnr] = useState({ student_id: "", child_name: "", level: "", school_year: "2026-2027", message: "", phone: "" });
+  const [rev, setRev] = useState({ rating: 5, comment: "" });
 
   const load = () => api.get(`/schools/slug/${slug}`).then(({ data }) => { setData(data); api.get(`/schools/${data.school.school_id}/posts`).then((r) => setPosts(r.data.results)).catch(() => {}); }).catch(() => setData(false));
-  useEffect(() => { load(); api.get("/schools/meta").then(({ data }) => setPtypes(data.proposal_types)).catch(() => {}); }, [slug]);
+  useEffect(() => { load(); api.get("/schools/meta").then(({ data }) => { setPtypes(data.proposal_types); setSmeta(data); }).catch(() => {}); }, [slug]);
+  useEffect(() => { if (user && (user.role === "PARENT" || user.role === "ADULT_LEARNER")) api.get("/students").then(({ data }) => setStudents(data.results)).catch(() => {}); }, [user]);
   useEffect(() => { if (data && ["#offres", "#actualites"].includes(window.location.hash)) document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ behavior: "smooth" }); }, [data]);
 
   if (data === null) return <PublicLayout><Loader /></PublicLayout>;
@@ -53,12 +60,26 @@ export default function SchoolPublicProfile() {
   const { school: s, contact, offers, similar } = data;
   const requireAuth = () => { if (!user) { toast.error("Connectez-vous pour continuer."); navigate("/connexion"); return false; } return true; };
   const isEdu = user?.role === "EDUCATOR" || user?.role === "ADMIN";
+  const isParent = user?.role === "PARENT" || user?.role === "ADULT_LEARNER";
+  const reviews = data.reviews || [];
+  const toggleNotify = async () => { try { const { data: r } = await api.put(`/schools/${s.school_id}/follow/notify`, { notify: !data.follow_notify }); setData((d) => ({ ...d, follow_notify: r.notify })); toast.success(r.notify ? "Vous recevrez les actualités de cette école" : "Actualités désactivées pour cette école"); } catch { toast.error("Erreur"); } };
+  const sendEnroll = async () => {
+    if (!enr.level || !enr.school_year || (!enr.student_id && !enr.child_name)) return toast.error("Enfant, niveau et année scolaire requis.");
+    try { await api.post("/enrollment-requests", { school_id: s.school_id, ...enr, student_id: enr.student_id || null }); toast.success("Demande d'inscription envoyée !"); setOpenEnroll(false); navigate("/dashboard/inscriptions"); }
+    catch (e) { toast.error(e.response?.data?.detail || "Erreur."); }
+  };
+  const sendReview = async () => {
+    if (!requireAuth()) return;
+    try { await api.post("/schools/reviews", { school_id: s.school_id, ...rev }); toast.success("Merci pour votre avis !"); setRev({ rating: 5, comment: "" }); load(); }
+    catch (e) { toast.error(e.response?.data?.detail || "Erreur."); }
+  };
+  const yt = (url) => { const m = (url || "").match(/(?:youtu\.be\/|v=|embed\/)([\w-]{11})/); return m ? `https://www.youtube.com/embed/${m[1]}` : null; };
 
   const fav = async () => { if (!requireAuth()) return; const { data: r } = await api.post("/favorites", { target_type: "school", target_id: s.school_id }); toast.success(r.favorited ? "École ajoutée aux favoris" : "Retirée des favoris"); setData((d) => ({ ...d, is_favorite: r.favorited })); };
   const follow = async () => { if (!requireAuth()) return; const { data: r } = await api.post(`/schools/${s.school_id}/follow`); toast.success(r.following ? "Vous suivez cette école" : "Vous ne suivez plus cette école"); setData((d) => ({ ...d, is_following: r.following })); };
   const sendMsg = async () => {
     if (!requireAuth()) return;
-    try { await api.post("/messages", { recipient_user_id: s.user_id, content: msg, context: `Contact — ${s.name}` }); toast.success("Message envoyé !"); setOpenContact(false); navigate("/dashboard/messages"); }
+    try { await api.post("/messages", { recipient_user_id: s.user_id, content: `[${subject}] ${msg}`, context: `${subject} — ${s.name}` }); toast.success("Message envoyé !"); setOpenContact(false); navigate("/dashboard/messages"); }
     catch (e) { toast.error(e.response?.data?.detail || "Erreur."); }
   };
   const sendProp = async () => {
@@ -96,11 +117,14 @@ export default function SchoolPublicProfile() {
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button data-testid="school-contact-btn" onClick={() => requireAuth() && setOpenContact(true)} className="rounded-xl bg-askool-blue text-white hover:bg-askool-bluehover"><MessageSquare size={16} /> Contacter l'école</Button>
+              <Button data-testid="school-contact-btn" onClick={() => requireAuth() && setOpenContact(true)} className="rounded-xl bg-askool-blue text-white hover:bg-askool-bluehover"><MessageSquare size={16} /> {isParent ? "Demander des informations" : "Contacter l'école"}</Button>
               {(!user || isEdu) && <Button data-testid="school-propose-btn" onClick={() => requireAuth() && setOpenProp(true)} className="rounded-xl bg-askool-orange font-semibold text-black hover:bg-askool-orangehover"><HandHelping size={16} /> Proposer mes services</Button>}
               <Button data-testid="school-fav-btn" variant="outline" onClick={fav} className={`rounded-xl ${data.is_favorite ? "border-red-300 text-red-500" : ""}`}><Heart size={16} className={data.is_favorite ? "fill-red-500" : ""} /> {data.is_favorite ? "Favori" : "Ajouter aux favoris"}</Button>
               <Button data-testid="school-follow-btn" variant="outline" onClick={follow} className={`rounded-xl ${data.is_following ? "border-askool-blue text-askool-blue" : ""}`}>{data.is_following ? <BellOff size={16} /> : <Bell size={16} />} {data.is_following ? "Suivi" : "Suivre"} · {s.followers_count}</Button>
-              <Button data-testid="school-offers-anchor" variant="ghost" onClick={() => document.getElementById("offres")?.scrollIntoView({ behavior: "smooth" })} className="rounded-xl"><Briefcase size={16} /> {s.offers_count} offre(s)</Button>
+              {data.is_following && <button data-testid="school-follow-notify" onClick={toggleNotify} className={`rounded-xl border px-3 py-2 text-xs font-medium ${data.follow_notify ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-gray-200 text-gray-500"}`}>{data.follow_notify ? "✓ Actualités reçues" : "Recevoir les actualités"}</button>}
+              {s.accept_enrollment_requests && (isParent || !user) && <Button data-testid="school-enroll-btn" onClick={() => requireAuth() && setOpenEnroll(true)} className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"><ClipboardList size={16} /> Demander une inscription</Button>}
+              {!isParent && <Button data-testid="school-offers-anchor" variant="ghost" onClick={() => document.getElementById("offres")?.scrollIntoView({ behavior: "smooth" })} className="rounded-xl"><Briefcase size={16} /> {s.offers_count} offre(s)</Button>}
+              {(isParent || !user) && s.reviews_count > 0 && <span className="inline-flex items-center gap-1 self-center text-sm font-semibold text-gray-800"><Star size={14} className="fill-askool-orange text-askool-orange" /> {s.rating} ({s.reviews_count} avis)</span>}
             </div>
           </div>
         </div>
@@ -124,6 +148,19 @@ export default function SchoolPublicProfile() {
               </div>
             </Section>
 
+            {(s.tuition_fee || s.registration_fee || s.schedule || s.admission_conditions || s.registration_periods || s.required_documents?.length > 0 || s.enrollment_open) && (
+              <Section icon={ClipboardList} title="Informations pratiques" testId="section-practical">
+                {s.enrollment_open && <div className="mb-3 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Inscriptions ouvertes{s.registration_periods ? ` · ${s.registration_periods}` : ""}</div>}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Fact label="Frais d'inscription" value={s.registration_fee} /><Fact label="Frais de scolarité" value={s.tuition_fee || (s.registration_fee ? "Nous contacter" : "")} />
+                  <Fact label="Modalités de paiement" value={s.payment_terms} /><Fact label="Horaires" value={s.schedule} />
+                  <Fact label="Calendrier scolaire" value={s.school_calendar} /><Fact label="Conditions d'admission" value={s.admission_conditions} />
+                  <Fact label="Âge minimum" value={s.min_age ? `${s.min_age} ans` : ""} /><Fact label="Places disponibles" value={s.available_seats} />
+                  <Fact label="Périodes d'inscription" value={s.registration_periods} /><Fact label="Systèmes éducatifs" value={s.education_systems?.join(", ")} />
+                </div>
+                {s.required_documents?.length > 0 && <div className="mt-3"><span className="text-xs font-semibold text-gray-500">Documents nécessaires à l'inscription</span><ul className="mt-1 list-inside list-disc text-sm text-gray-700">{s.required_documents.map((d) => <li key={d}>{d}</li>)}</ul></div>}
+              </Section>
+            )}
             <Section icon={BookOpen} title="Enseignement" testId="section-teaching">
               <div className="space-y-3">
                 {s.subjects?.length > 0 && <div><span className="text-xs font-semibold text-gray-500">Matières principales</span><div className="mt-1 flex flex-wrap gap-1.5">{s.subjects.map((x) => <Tag key={x}>{x}</Tag>)}</div></div>}
@@ -150,6 +187,24 @@ export default function SchoolPublicProfile() {
               </Section>
             )}
 
+            {s.faq?.length > 0 && (
+              <Section icon={HelpCircle} title="Questions fréquentes" testId="section-faq">
+                <div className="divide-y divide-gray-100">{s.faq.map((q, i) => <details key={i} className="group py-3" data-testid={`faq-${i}`}><summary className="cursor-pointer list-none font-medium text-gray-900 marker:hidden">{q.q}</summary><p className="mt-2 text-sm text-gray-700">{q.a}</p></details>)}</div>
+              </Section>
+            )}
+            <Section icon={Star} title={`Avis (${reviews.length})`} testId="section-reviews">
+              {reviews.length > 0 ? (
+                <><div className="mb-4 flex items-center gap-2"><span className="font-display text-3xl font-bold text-gray-900">{s.rating}</span><div><div className="flex">{[1, 2, 3, 4, 5].map((i) => <Star key={i} size={14} className={i <= Math.round(s.rating) ? "fill-askool-orange text-askool-orange" : "text-gray-300"} />)}</div><div className="text-xs text-muted-foreground">{reviews.length} avis</div></div></div>
+                  <div className="space-y-3">{reviews.map((r) => <div key={r.review_id} data-testid={`review-${r.review_id}`} className="rounded-xl bg-gray-50 p-4"><div className="flex flex-wrap items-center gap-2 text-sm"><span className="font-medium text-gray-900">{r.author_name}</span><span className="text-askool-orange">{"★".repeat(r.rating)}</span>{r.verified ? <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Avis vérifié</span> : <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500">Retour d'utilisateur</span>}<span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString("fr-FR")}</span></div>{r.comment && <p className="mt-1 text-sm text-gray-700">{r.comment}</p>}</div>)}</div></>
+              ) : <p className="text-sm text-muted-foreground">Aucun avis pour le moment.</p>}
+              {(isParent || isEdu) && (
+                <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-4" data-testid="review-form">
+                  <div className="mb-2 text-sm font-medium text-gray-800">Laisser un avis</div>
+                  <div className="flex items-center gap-3"><select data-testid="review-rating" value={rev.rating} onChange={(e) => setRev({ ...rev, rating: Number(e.target.value) })} className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">{[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}</select><Input data-testid="review-comment" value={rev.comment} onChange={(e) => setRev({ ...rev, comment: e.target.value })} placeholder="Votre expérience avec cet établissement…" className="rounded-lg" /><Button data-testid="review-send" onClick={sendReview} className="rounded-lg bg-askool-blue text-white">Publier</Button></div>
+                  <p className="mt-2 text-xs text-muted-foreground">Les avis sont modérés. Un avis est « vérifié » lorsqu'il provient d'une famille ayant échangé avec l'école ou déposé une demande.</p>
+                </div>
+              )}
+            </Section>
             {posts.length > 0 && (
               <Section id="actualites" icon={Newspaper} title={`Actualités (${posts.length})`} testId="section-news">
                 <div className="space-y-3">
@@ -160,6 +215,8 @@ export default function SchoolPublicProfile() {
                         <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CAT_COLORS[p.category] || "bg-gray-100 text-gray-700"}`}>{p.category}</span><span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("fr-FR")}</span></div>
                         <h3 className="mt-1 font-display font-semibold text-gray-900">{p.title}</h3>
                         <p className="mt-1 whitespace-pre-line text-sm text-gray-700">{p.content}</p>
+                        {p.images?.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{p.images.map((u, i) => <button key={i} onClick={() => setZoom({ url: u, caption: p.title })}><img src={u} alt="" className="h-16 w-16 rounded-lg object-cover" /></button>)}</div>}
+                        {yt(p.video_url) && <iframe title={p.title} src={yt(p.video_url)} className="mt-2 aspect-video w-full max-w-md rounded-lg" allowFullScreen />}
                       </div>
                     </div>
                   ))}
@@ -247,6 +304,7 @@ export default function SchoolPublicProfile() {
       </Dialog>
       <Dialog open={openContact} onOpenChange={setOpenContact}>
         <DialogContent data-testid="contact-school-dialog"><DialogHeader><DialogTitle>Contacter {s.name}</DialogTitle><DialogDescription>Votre message sera envoyé via la messagerie ASKOOL.</DialogDescription></DialogHeader>
+          <div><Label>Sujet</Label><select data-testid="contact-subject" value={subject} onChange={(e) => setSubject(e.target.value)} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">{(smeta.contact_subjects || ["Autre"]).map((c) => <option key={c}>{c}</option>)}</select></div>
           <Textarea data-testid="contact-school-message" value={msg} onChange={(e) => setMsg(e.target.value)} rows={5} placeholder="Bonjour, je souhaiterais…" className="rounded-lg" />
           <Button data-testid="contact-school-send" onClick={sendMsg} disabled={!msg.trim()} className="rounded-xl bg-askool-blue text-white">Envoyer</Button>
         </DialogContent>
@@ -263,6 +321,20 @@ export default function SchoolPublicProfile() {
           </div>
           <p className="text-xs text-muted-foreground">Votre profil ASKOOL et votre CV sont joints automatiquement à la proposition.</p>
           <Button data-testid="prop-send" onClick={sendProp} className="rounded-xl bg-askool-orange font-semibold text-black">Envoyer ma proposition</Button>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={openEnroll} onOpenChange={setOpenEnroll}>
+        <DialogContent data-testid="enroll-dialog"><DialogHeader><DialogTitle>Demander une inscription — {s.name}</DialogTitle><DialogDescription>L'école recevra votre demande dans son espace et vous répondra via la messagerie.</DialogDescription></DialogHeader>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2"><Label>Enfant concerné</Label>
+              {students.length > 0 ? <select data-testid="enroll-student" value={enr.student_id} onChange={(e) => setEnr({ ...enr, student_id: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm"><option value="">Choisir…</option>{students.map((st) => <option key={st.student_id} value={st.student_id}>{st.name} ({st.class_level})</option>)}</select>
+                : <Input data-testid="enroll-child" value={enr.child_name} onChange={(e) => setEnr({ ...enr, child_name: e.target.value })} className="mt-1 rounded-lg" placeholder="Prénom de l'enfant" />}</div>
+            <div><Label>Niveau souhaité</Label><Input data-testid="enroll-level" value={enr.level} onChange={(e) => setEnr({ ...enr, level: e.target.value })} className="mt-1 rounded-lg" placeholder="CM2, 6e…" /></div>
+            <div><Label>Année scolaire</Label><Input data-testid="enroll-year" value={enr.school_year} onChange={(e) => setEnr({ ...enr, school_year: e.target.value })} className="mt-1 rounded-lg" /></div>
+            <div className="sm:col-span-2"><Label>Téléphone (optionnel)</Label><Input data-testid="enroll-phone" value={enr.phone} onChange={(e) => setEnr({ ...enr, phone: e.target.value })} className="mt-1 rounded-lg" /></div>
+            <div className="sm:col-span-2"><Label>Message</Label><Textarea data-testid="enroll-message" value={enr.message} onChange={(e) => setEnr({ ...enr, message: e.target.value })} rows={3} className="mt-1 rounded-lg" /></div>
+          </div>
+          <Button data-testid="enroll-send" onClick={sendEnroll} className="rounded-xl bg-emerald-600 text-white">Envoyer la demande</Button>
         </DialogContent>
       </Dialog>
     </PublicLayout>

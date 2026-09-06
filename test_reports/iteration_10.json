@@ -1,0 +1,69 @@
+{
+  "summary": "Iteration 10 — Parent<->School module. Backend 17/17 pytest passing (test_parent_school_module.py). Frontend verified via Playwright: parent dashboard home, filters/map/compare on /dashboard/ecoles, public school profile with practical/FAQ/reviews/enroll/contact/follow, settings (profile/prefs/privacy/notif/avatar), students CRUD, feed/favoris, enrollments; school /dashboard/actualites (stats + video), /dashboard/inscriptions (status select), /dashboard/etablissement (Infos pratiques + FAQ tabs). All new testids resolve.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/ecoles/:slug — review-rating <select>", "issues": ["Console hydration error: <span> is a child of <option> in SchoolPublicProfile.jsx line 203 (Radix/dev instrumentation wrapping). Non-blocking. Consider a native select rendered outside instrumentation or plain option children."]}
+    ]
+  },
+  "test_results": {
+    "backend_pytest": {
+      "file": "/app/backend/tests/test_parent_school_module.py",
+      "result": "17 passed / 0 failed",
+      "junit": "/app/test_reports/pytest/parent_school.xml",
+      "covered": [
+        "GET /api/schools/meta -> parent_school_types, education_systems, family_services, contact_subjects, post_categories(9) incl. 'Inscription' & 'Information aux parents'",
+        "PUT /api/schools/me persists tuition_fee, registration_fee, faq[], required_documents, enrollment_open, accept_enrollment_requests, education_systems and appears on GET /schools/slug/:slug",
+        "GET /api/schools filters service=Cantine, language=Français, has_fees=true, enrollment_open=true; results carry rating & reviews_count",
+        "GET /api/schools near_lat/near_lng/radius_km returns distance_km ASC-sorted",
+        "GET /api/schools/compare?ids=<a>,<b> returns both",
+        "PUT /api/users/me/profile (city, preferred_language, search_prefs, privacy, notification_prefs) -> GET /api/auth/me returns them under user{}",
+        "POST/PUT/DELETE /api/students; GET /api/schools/recommended-for-parent?student_id -> match_score/match_reasons; level='Collège' for class_level='5e'",
+        "GET /api/parent/overview returns all 7 fields",
+        "POST /api/enrollment-requests -> 200; /mine and /received; PUT status='En cours' notifies parent (enrollment_status); invalid status -> 400; accept_enrollment_requests=false -> 400",
+        "POST /api/schools/reviews -> verified=true (parent has enrollment); duplicate -> 400; slug shows reviews[] and rating/reviews_count",
+        "Follow notify off -> POST /schools/me/posts (Inscription, video_url YouTube) does NOT notify parent; toggle on -> next post DOES notify (type=school_post); PUT /schools/me/posts/{id} edits; GET /schools/me/posts/stats returns posts/views/followers/reached; GET /api/feed as PARENT 200"
+      ]
+    },
+    "frontend_playwright": {
+      "parent_home": "stat-children, stat-following, stat-new-posts, parent-recommendations (3 school-match-* badges), news-feed all present; sidebar has all 7 links",
+      "/dashboard/ecoles": "toggle-school-filters + all 5 filter testids present; school-view-map -> school-map-view renders; school-card-* + compare-check-* + follow-school-* (4 schools) present",
+      "/ecoles/institution-sainte-marie": "section-practical, section-faq, section-reviews, review-form/rating/comment/send, school-enroll-btn, school-contact-btn ('Demander des informations'), school-follow-btn all present",
+      "enroll-dialog": "opens with enroll-student (student mode — parent has a student), enroll-level, enroll-year, enroll-send",
+      "/dashboard/parametres": "parent-profile-card + profile-name/city/language + search-prefs-card + pref-languages/services + privacy-card + notif-card + save-profile-btn + avatar-pick (avatar-remove hidden when no photo, expected)",
+      "/dashboard/eleves": "add-student-btn opens dialog with student-name, student-current_school, student-objectives; edit-student-* + delete-student-* rendered",
+      "/dashboard/fil": "news-feed present; parent's followed school has no fresh posts -> feed-empty with feed-manage-follows/feed-find-schools shown (expected UX)",
+      "/dashboard/favoris": "fav-tab-following + fav-tab-schools + fav-tab-educators",
+      "/dashboard/inscriptions (parent)": "enrollment-* card rendered",
+      "school /dashboard/actualites": "news-stat-posts/views/followers/reached, news-category, news-video, news-edit-* (3 posts)",
+      "school /dashboard/inscriptions": "enrollment-* + enroll-status-* select",
+      "school /dashboard/etablissement": "school-tab-'Infos pratiques' click -> school-tuition_fee, school-enrollment_open, school-accept_enrollment, school-docs-input, school-docs-add; school-tab-FAQ click -> faq-add"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_parent_school_module.py",
+    "/app/test_reports/pytest/parent_school.xml"
+  ],
+  "action_items": [
+    "Minor a11y: SchoolPublicProfile.jsx line 203 <select><option> emits a hydration console error (<span> in <option>) from Radix/dev instrumentation. Cosmetic/dev-only."
+  ],
+  "critical_code_review_comments": [
+    "schools_routes.decorate() still runs N+1 queries per school (offers_count, followers_count, reviews aggregate) inside list_schools and recommended_for_parent (iterates 300 docs). At scale, batch via $lookup + $group. Same concern as iteration_9.",
+    "PUT /schools/me still regenerates slug from name on every save even if name unchanged (unique_slug called unconditionally). If a school renames back-and-forth this may accumulate '-2', '-3' suffixes and break shared/bookmarked /ecoles/:slug URLs. Should short-circuit when existing.name == body.name.",
+    "recommended_for_parent trusts prefs.lat/lng from user document but never validates them; if malformed values are stored via PUT /users/me/profile they'd crash haversine_km. Consider coercing to floats and try/except.",
+    "notify() loop in create_post fans out synchronously per follower with per-user db.users.find_one — for schools with thousands of followers this will block; consider one aggregate/batch users lookup + bulk notification insert_many.",
+    "level_from_class mapping is French/Senegal-centric; class_level input is free-text — collisions possible (e.g. '1ere' matches Lycée but also 'primaire' substring 'ère' is not an issue; still, prefer exact tokens). Fine for MVP.",
+    "POST /schools/reviews `verified=true` if the reviewer has ANY conversation with the school OR any enrollment_request — a parent who merely sent a message can gain a verified badge. Consider requiring a completed enrollment or booking."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_parent_school_module.py"
+  ],
+  "success_rate": {"backend": "100% (17/17)", "frontend": "100% (all listed acceptance criteria verified)"},
+  "test_credentials": "See /app/memory/test_credentials.md — parent@askool.sn / Askool2026! (PARENT), contact.institution1@askool.sn / Askool2026! (SCHOOL, slug institution-sainte-marie).",
+  "seed_data_creation": "Backend suite creates: 1 TEST_ student for parent (deleted in fixture teardown), 1 TEST_Child enrollment_request (kept, status now 'En cours'), 1 review from parent on institution-sainte-marie ('TEST_Très bien', 5★, verified=true), 2 school_posts (TEST_Post_notify_off, TEST_Post_edited [was TEST_Post_notify_on]). School institution-sainte-marie now has tuition_fee='300 000 FCFA/an', registration_fee='50 000 FCFA', faq=[{Quels sont les horaires? / 8h-17h}], required_documents=['Acte de naissance','Bulletins précédents'], enrollment_open=true, accept_enrollment_requests=true, education_systems=['Programme sénégalais'].",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All backend endpoints for the parent<->school module verified. Test file /app/backend/tests/test_parent_school_module.py is largely idempotent (review dedupes to 400, follow toggle handles pre-existing state, TEST_ prefixed data). Frontend routes exercised: /dashboard (parent home), /dashboard/ecoles (with map + compare), /ecoles/institution-sainte-marie (enroll+contact+follow+review), /dashboard/parametres, /dashboard/eleves, /dashboard/fil, /dashboard/favoris, /dashboard/inscriptions (both roles), /dashboard/actualites (school), /dashboard/etablissement Infos pratiques + FAQ tabs. Login route: /connexion."
+}

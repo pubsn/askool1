@@ -294,3 +294,25 @@ async def enrich_schools():
             extra.setdefault(k, [])
         await db.schools.update_one({"school_id": s["school_id"]}, {"$set": extra})
         await db.job_offers.update_many({"school_user_id": s["user_id"]}, {"$set": {"school_slug": extra["slug"]}})
+
+
+PRACTICAL = {
+    "Institution Sainte-Marie": {"education_systems": ["Programme sénégalais"], "registration_fee": "25 000 FCFA", "tuition_fee": "À partir de 350 000 FCFA / an",
+        "payment_terms": "Paiement en 3 tranches (octobre, janvier, avril)", "schedule": "Lundi–Vendredi 8h–13h et 15h–17h", "school_calendar": "Rentrée le 1er octobre",
+        "admission_conditions": "Dossier scolaire + entretien", "min_age": 6, "required_documents": ["Extrait de naissance", "Bulletins de l'année précédente", "2 photos d'identité", "Certificat médical"],
+        "registration_periods": "Mai à septembre", "available_seats": 60, "enrollment_open": True, "accept_enrollment_requests": True,
+        "faq": [{"q": "Quels sont les horaires ?", "a": "8h–13h et 15h–17h du lundi au vendredi."}, {"q": "Y a-t-il une cantine ?", "a": "Oui, restauration sur place le midi."}, {"q": "Comment s'inscrire ?", "a": "Déposez un dossier au secrétariat ou envoyez une demande via ASKOOL."}]},
+    "Cours Privé El Hadji Malick": {"education_systems": ["Programme franco-arabe", "Programme sénégalais"], "registration_fee": "15 000 FCFA", "tuition_fee": "À partir de 180 000 FCFA / an",
+        "payment_terms": "Mensualités possibles", "schedule": "Lundi–Samedi 8h–14h", "school_calendar": "Rentrée début octobre", "admission_conditions": "Test de niveau pour le collège",
+        "min_age": 3, "required_documents": ["Extrait de naissance", "Photos d'identité"], "registration_periods": "Juin à octobre", "available_seats": 40, "enrollment_open": True, "accept_enrollment_requests": True,
+        "faq": [{"q": "Y a-t-il un transport scolaire ?", "a": "Oui, plusieurs circuits dans Grand Dakar et alentours."}, {"q": "Quelle est la date de rentrée ?", "a": "Début octobre chaque année."}]},
+}
+
+
+async def enrich_practical():
+    async for s in db.schools.find({"faq": {"$exists": False}}, {"_id": 0, "school_id": 1, "name": 1}):
+        extra = dict(PRACTICAL.get(s["name"], {}))
+        for k, v in [("faq", []), ("education_systems", []), ("required_documents", []), ("enrollment_open", False), ("accept_enrollment_requests", False),
+                     ("registration_fee", ""), ("tuition_fee", ""), ("payment_terms", ""), ("schedule", ""), ("school_calendar", ""), ("admission_conditions", ""), ("registration_periods", "")]:
+            extra.setdefault(k, v)
+        await db.schools.update_one({"school_id": s["school_id"]}, {"$set": extra})

@@ -11,8 +11,8 @@ import FileUpload from "@/components/FileUpload";
 import { cn } from "@/lib/utils";
 import api, { API_ROOT } from "@/lib/api";
 
-const TABS = ["Identité", "Localisation", "Contact", "Présentation", "Enseignement", "Infrastructures", "Galerie", "Vérification"];
-const INIT = { name: "", commercial_name: "", school_type: "", status: "", founded_year: "", students_count: "", teachers_count: "", levels: [], languages: [], education_system: "", description: "", history: "", mission: "", values: "", pedagogy: "", region: "", city: "", district: "", location: "", directions: "", lat: null, lng: null, hide_exact_location: false, phone: "", email: "", website: "", whatsapp: "", socials: {}, contact_visibility: "public", subjects: [], programs: "", methods: "", school_life: [], infrastructures: [], services: [], gallery: [], recruiting: [], contract_types: [], logo: "", cover: "" };
+const TABS = ["Identité", "Localisation", "Contact", "Présentation", "Enseignement", "Infrastructures", "Infos pratiques", "FAQ", "Galerie", "Vérification"];
+const INIT = { name: "", commercial_name: "", school_type: "", status: "", founded_year: "", students_count: "", teachers_count: "", levels: [], languages: [], education_system: "", description: "", history: "", mission: "", values: "", pedagogy: "", region: "", city: "", district: "", location: "", directions: "", lat: null, lng: null, hide_exact_location: false, phone: "", email: "", website: "", whatsapp: "", socials: {}, contact_visibility: "public", subjects: [], programs: "", methods: "", school_life: [], infrastructures: [], services: [], gallery: [], recruiting: [], contract_types: [], logo: "", cover: "", education_systems: [], registration_fee: "", tuition_fee: "", payment_terms: "", schedule: "", school_calendar: "", admission_conditions: "", min_age: "", required_documents: [], registration_periods: "", available_seats: "", enrollment_open: false, accept_enrollment_requests: false, faq: [] };
 
 function Chips({ label, options, value = [], onChange, testId }) {
   const toggle = (o) => onChange(value.includes(o) ? value.filter((x) => x !== o) : [...value, o]);
@@ -56,7 +56,7 @@ export default function SchoolProfile() {
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
   const save = async () => {
     if (!f.name.trim()) return toast.error("Le nom de l'établissement est requis.");
-    const payload = { ...f, founded_year: f.founded_year || null, students_count: f.students_count || null, teachers_count: f.teachers_count || null };
+    const payload = { ...f, founded_year: f.founded_year || null, students_count: f.students_count || null, teachers_count: f.teachers_count || null, min_age: f.min_age || null, available_seats: f.available_seats || null };
     try { const { data } = await api.put("/schools/me", payload); setF((p) => ({ ...p, ...data.school })); toast.success("Établissement enregistré !"); } catch (e) { toast.error(e.response?.data?.detail || "Erreur"); }
   };
   const submitVerif = async () => {
@@ -137,6 +137,35 @@ export default function SchoolProfile() {
           <div className="space-y-5">
             <ListEditor label="Infrastructures" value={f.infrastructures} onChange={(v) => set("infrastructures", v)} placeholder="Laboratoire, bibliothèque, cantine…" testId="school-infra" />
             <ListEditor label="Services" value={f.services} onChange={(v) => set("services", v)} placeholder="Transport scolaire, restauration…" testId="school-services" />
+          </div>
+        )}
+        {tab === "Infos pratiques" && (
+          <div className="space-y-5">
+            <p className="text-sm text-muted-foreground">Ces informations aident les familles. N'indiquez que ce que vous souhaitez communiquer ; les champs vides ne sont pas affichés.</p>
+            <Chips label="Systèmes éducatifs / programmes" options={smeta.education_systems || []} value={f.education_systems} onChange={(v) => set("education_systems", v)} testId="school-education_systems" />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Frais d'inscription" k="registration_fee" f={f} set={set} placeholder="25 000 FCFA" /><Field label="Frais de scolarité" k="tuition_fee" f={f} set={set} placeholder="À partir de 350 000 FCFA / an" />
+              <Field label="Modalités de paiement" k="payment_terms" f={f} set={set} placeholder="3 tranches" /><Field label="Horaires" k="schedule" f={f} set={set} placeholder="8h–13h / 15h–17h" />
+              <Field label="Calendrier scolaire" k="school_calendar" f={f} set={set} placeholder="Rentrée le 1er octobre" /><Field label="Conditions d'admission" k="admission_conditions" f={f} set={set} />
+              <Field label="Âge minimum" k="min_age" f={f} set={set} type="number" /><Field label="Places disponibles" k="available_seats" f={f} set={set} type="number" />
+              <Field label="Périodes d'inscription" k="registration_periods" f={f} set={set} placeholder="Mai à septembre" span />
+            </div>
+            <ListEditor label="Documents nécessaires à l'inscription" value={f.required_documents} onChange={(v) => set("required_documents", v)} placeholder="Extrait de naissance" testId="school-docs" />
+            <label className="flex items-center gap-2 text-sm"><input data-testid="school-enrollment_open" type="checkbox" checked={!!f.enrollment_open} onChange={(e) => set("enrollment_open", e.target.checked)} /> Inscriptions ouvertes actuellement</label>
+            <label className="flex items-center gap-2 text-sm"><input data-testid="school-accept_enrollment" type="checkbox" checked={!!f.accept_enrollment_requests} onChange={(e) => set("accept_enrollment_requests", e.target.checked)} /> Accepter les demandes d'inscription en ligne via ASKOOL</label>
+          </div>
+        )}
+        {tab === "FAQ" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Répondez aux questions que les familles posent le plus souvent (niveaux, horaires, frais, cantine, transport, inscription, documents, rentrée).</p>
+            {(f.faq || []).map((q, i) => (
+              <div key={i} data-testid={`faq-edit-${i}`} className="rounded-xl border border-gray-100 p-3">
+                <Input value={q.q} onChange={(e) => set("faq", f.faq.map((x, j) => j === i ? { ...x, q: e.target.value } : x))} placeholder="Question" className="rounded-lg font-medium" />
+                <Textarea value={q.a} onChange={(e) => set("faq", f.faq.map((x, j) => j === i ? { ...x, a: e.target.value } : x))} placeholder="Réponse" rows={2} className="mt-2 rounded-lg" />
+                <button type="button" onClick={() => set("faq", f.faq.filter((_, j) => j !== i))} className="mt-2 flex items-center gap-1 text-xs text-red-500"><Trash2 size={12} /> Supprimer</button>
+              </div>
+            ))}
+            <Button type="button" data-testid="faq-add" variant="outline" onClick={() => set("faq", [...(f.faq || []), { q: "", a: "" }])} className="rounded-xl">+ Ajouter une question</Button>
           </div>
         )}
         {tab === "Galerie" && (

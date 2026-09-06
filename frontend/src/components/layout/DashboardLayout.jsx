@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import {
   LayoutDashboard, User, FileText, Calendar, Heart, MessageSquare, Star,
   CreditCard, Settings, PlusCircle, Briefcase, Users, Search, Building2,
-  Bell, LogOut, GraduationCap, ShieldCheck, Home, HandHelping, Newspaper,
+  Bell, LogOut, GraduationCap, ShieldCheck, Home, HandHelping, Newspaper, ClipboardList,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Logo } from "@/components/layout/PublicLayout";
@@ -30,6 +30,7 @@ const MENUS = {
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
     { label: "Mon établissement", to: "/dashboard/etablissement", icon: Building2 },
     { label: "Actualités", to: "/dashboard/actualites", icon: Newspaper },
+    { label: "Inscriptions", to: "/dashboard/inscriptions", icon: ClipboardList },
     { label: "Publier une offre", to: "/dashboard/publier", icon: PlusCircle },
     { label: "Mes offres", to: "/dashboard/offres", icon: Briefcase },
     { label: "Candidatures", to: "/dashboard/candidatures", icon: FileText },
@@ -41,22 +42,31 @@ const MENUS = {
   ],
   PARENT: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
-    { label: "Mes élèves", to: "/dashboard/eleves", icon: Users },
+    { label: "Mon profil", to: "/dashboard/parametres", icon: User },
+    { label: "Mes enfants", to: "/dashboard/eleves", icon: Users },
+    { label: "Trouver une école", to: "/dashboard/ecoles", icon: Building2 },
+    { label: "Trouver un éducateur", to: "/dashboard/tuteurs", icon: Search },
+    { label: "Mes écoles suivies", to: "/dashboard/favoris", icon: Heart },
     { label: "Mes demandes", to: "/dashboard/demandes", icon: FileText },
+    { label: "Inscriptions", to: "/dashboard/inscriptions", icon: ClipboardList },
     { label: "Alertes de zone", to: "/dashboard/alertes", icon: Bell },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
-    { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
-    { label: "Paramètres", to: "/dashboard/parametres", icon: Settings },
+    { label: "Actualités", to: "/dashboard/fil", icon: Newspaper },
+    { label: "Notifications", to: "/dashboard/notifications", icon: Bell },
   ],
   ADULT_LEARNER: [
     { label: "Tableau de bord", to: "/dashboard", icon: LayoutDashboard },
+    { label: "Mon profil", to: "/dashboard/parametres", icon: User },
+    { label: "Trouver une école", to: "/dashboard/ecoles", icon: Building2 },
+    { label: "Trouver un éducateur", to: "/dashboard/tuteurs", icon: Search },
+    { label: "Mes écoles suivies", to: "/dashboard/favoris", icon: Heart },
     { label: "Mes demandes", to: "/dashboard/demandes", icon: FileText },
+    { label: "Inscriptions", to: "/dashboard/inscriptions", icon: ClipboardList },
     { label: "Alertes de zone", to: "/dashboard/alertes", icon: Bell },
     { label: "Mes réservations", to: "/dashboard/reservations", icon: Calendar },
-    { label: "Favoris", to: "/dashboard/favoris", icon: Heart },
     { label: "Messages", to: "/dashboard/messages", icon: MessageSquare },
-    { label: "Paramètres", to: "/dashboard/parametres", icon: Settings },
+    { label: "Actualités", to: "/dashboard/fil", icon: Newspaper },
   ],
   ADMIN: [
     { label: "Vue générale", to: "/dashboard", icon: LayoutDashboard },

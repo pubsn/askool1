@@ -58,7 +58,8 @@ def _public_user(u: dict) -> dict:
         "role": u.get("role"), "roles": u.get("roles", [u.get("role")]),
         "avatar_url": u.get("avatar_url"), "email_verified": u.get("email_verified", False),
         "is_premium": u.get("is_premium", False), "phone": u.get("phone"),
-        "created_at": u.get("created_at"),
+        "created_at": u.get("created_at"), "city": u.get("city", ""), "preferred_language": u.get("preferred_language", ""),
+        "search_prefs": u.get("search_prefs", {}), "privacy": u.get("privacy", {}), "notification_prefs": u.get("notification_prefs", {}),
     }
 
 

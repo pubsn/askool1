@@ -12,7 +12,8 @@ export default function Favorites() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isEdu = user?.role === "EDUCATOR";
-  const [tab, setTab] = useState(isEdu ? "schools" : "educators");
+  const isParent = user?.role === "PARENT" || user?.role === "ADULT_LEARNER";
+  const [tab, setTab] = useState(isEdu || isParent ? "schools" : "educators");
   const [educators, setEducators] = useState(null);
   const [schools, setSchools] = useState(null);
   const [following, setFollowing] = useState(null);
@@ -28,11 +29,11 @@ export default function Favorites() {
   const Tab = ({ id, label, icon: Icon, count }) => <button data-testid={`fav-tab-${id}`} onClick={() => setTab(id)} className={`inline-flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium ${tab === id ? "bg-askool-blue text-white" : "text-gray-500"}`}><Icon size={14} /> {label}{count != null ? ` (${count})` : ""}</button>;
   return (
     <div>
-      <PageHeader title="Mes favoris" subtitle="Retrouvez les éducateurs et les écoles que vous suivez." />
+      <PageHeader title={isParent ? "Mes écoles suivies & favoris" : "Mes favoris"} subtitle="Retrouvez les écoles que vous suivez, vos écoles favorites et vos éducateurs." />
       <div className="mb-6 inline-flex flex-wrap items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
-        <Tab id="schools" label="Écoles favorites" icon={Building2} count={schools?.length} />
         <Tab id="following" label="Écoles suivies" icon={Bell} count={following?.length} />
-        <Tab id="educators" label="Éducateurs" icon={Heart} count={educators?.length} />
+        <Tab id="schools" label="Écoles favorites" icon={Building2} count={schools?.length} />
+        <Tab id="educators" label={isParent ? "Éducateurs & tuteurs" : "Éducateurs"} icon={Heart} count={educators?.length} />
       </div>
       {tab === "educators" && (educators === null ? <Loader /> : educators.length === 0 ? (
         <EmptyState icon={Heart} title="Aucun éducateur favori" description="Ajoutez des éducateurs à vos favoris depuis leur profil." action={<Button onClick={() => navigate("/educateurs")} className="rounded-xl bg-askool-blue text-white">Explorer les éducateurs</Button>} />
