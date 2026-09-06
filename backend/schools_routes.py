@@ -441,3 +441,16 @@ async def delete_post(post_id: str, user: dict = Depends(require_roles("SCHOOL")
 async def school_posts(school_id: str):
     docs = await db.school_posts.find({"school_id": school_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return {"results": docs}
+
+
+@router.get("/feed")
+async def news_feed(user: dict = Depends(require_roles("EDUCATOR")), limit: int = 20):
+    follows = await db.school_follows.find({"user_id": user["user_id"]}, {"_id": 0, "school_id": 1}).to_list(200)
+    ids = [f["school_id"] for f in follows]
+    if not ids:
+        return {"results": [], "following_count": 0}
+    docs = await db.school_posts.find({"school_id": {"$in": ids}}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    logos = {s["school_id"]: s.get("logo") async for s in db.schools.find({"school_id": {"$in": ids}}, {"_id": 0, "school_id": 1, "logo": 1})}
+    for d in docs:
+        d["school_logo"] = logos.get(d["school_id"])
+    return {"results": docs, "following_count": len(ids)}

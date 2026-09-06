@@ -91,6 +91,11 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Page école `/dashboard/actualites` (SchoolNews.jsx : formulaire + liste + suppression), entrée menu « Actualités », carte d'action sur l'accueil ; section « Actualités » sur le profil public
 - Vérifié : curl (création, notification follower, 400 catégorie invalide) + screenshots
 
+## Implemented (2026-06 — Fil d'actualités éducateur)
+- `GET /api/feed?limit=` (EDUCATOR, 403 sinon) : dernières publications des écoles suivies (+ logo école)
+- Composant `NewsFeed.jsx` sur l'accueil éducateur : items cliquables → profil école #actualites ; état vide avec CTA « Trouver une école » / lien Écoles suivies
+- Vérifié : curl (feed éducateur OK, 403 parent) + screenshot
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

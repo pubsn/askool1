@@ -4,6 +4,7 @@ import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, Cr
 import { StatCard, PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
+import NewsFeed from "@/components/NewsFeed";
 import { useAuth } from "@/context/AuthContext";
 
 export default function DashboardHome() {
@@ -55,6 +56,7 @@ function EducatorHome({ navigate, user }) {
           </div>
         </div>
       </div>
+      <div className="mt-6"><NewsFeed /></div>
     </div>
   );
 }
