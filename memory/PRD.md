@@ -71,6 +71,11 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Entrée de menu « Opportunités » (barre latérale éducateur) + carte d'action sur l'accueil éducateur
 - Vérifié iteration_8 : backend 4/4 pytest, flux UI complet OK
 
+## Implemented (2026-06 — Upload photo profil École & Parent)
+- Profil École (`/dashboard/etablissement`) : upload du logo (FileUpload → `logo` via PUT `/schools/me`, déjà supporté côté modèle) avec aperçu
+- Profil Parent / Apprenant (Paramètres `/dashboard/parametres`) : carte « Photo de profil » + upload avatar via nouvel endpoint `PUT /api/users/me/avatar` (met à jour `users.avatar_url`, renvoyé par `/auth/me`) ; `refreshUser()` rafraîchit le contexte
+- Vérifié : endpoint persiste l'avatar (curl), boutons d'upload présents sur les deux pages
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

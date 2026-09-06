@@ -258,6 +258,18 @@ async def get_my_school(user: dict = Depends(require_roles("SCHOOL"))):
     return {"school": school}
 
 
+class AvatarBody(BaseModel):
+    avatar_url: Optional[str] = None
+
+
+@api.put("/users/me/avatar")
+async def update_avatar(body: AvatarBody, user: dict = Depends(get_current_user)):
+    await db.users.update_one({"user_id": user["user_id"]},
+                              {"$set": {"avatar_url": body.avatar_url, "updated_at": now_iso()}})
+    u = await db.users.find_one({"user_id": user["user_id"]}, {"_id": 0})
+    return {"avatar_url": u.get("avatar_url")}
+
+
 class JobBody(BaseModel):
     title: str
     contract_type: str = ""

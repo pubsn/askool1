@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import api from "@/lib/api";
+import FileUpload from "@/components/FileUpload";
+import api, { API_ROOT } from "@/lib/api";
 
 export default function SchoolProfile() {
   const [meta, setMeta] = useState({ regions: [] });
@@ -23,6 +24,10 @@ export default function SchoolProfile() {
     <div>
       <PageHeader title="Mon établissement" subtitle="Renseignez les informations de votre école." action={<Button data-testid="save-school-btn" onClick={save} className="rounded-xl bg-askool-blue text-white hover:bg-askool-bluehover">Enregistrer</Button>} />
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="mb-6 flex items-center gap-4">
+          {f.logo ? <img src={f.logo} alt="logo" data-testid="school-logo-preview" className="h-16 w-16 rounded-xl object-cover" /> : <span className="flex h-16 w-16 items-center justify-center rounded-xl bg-gray-100 text-xs text-gray-400">Logo</span>}
+          <FileUpload category="photo" visibility="public" accept="image/*" testId="upload-school-logo" onUploaded={(file) => set("logo", `${API_ROOT}/files/${file.file_id}`)}>Téléverser le logo</FileUpload>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2"><Label>Nom de l'établissement</Label><Input data-testid="school-name" value={f.name} onChange={(e) => set("name", e.target.value)} className="mt-1 rounded-lg" /></div>
           <div><Label>Type</Label><Input data-testid="school-type" value={f.school_type} onChange={(e) => set("school_type", e.target.value)} className="mt-1 rounded-lg" placeholder="Ex: Privé - Général" /></div>
