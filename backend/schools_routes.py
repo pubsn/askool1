@@ -720,6 +720,7 @@ class ParentProfileBody(BaseModel):
     search_prefs: Optional[dict] = None
     privacy: Optional[dict] = None
     notification_prefs: Optional[dict] = None
+    learner_profile: Optional[dict] = None
 
 
 @router.put("/users/me/profile")
@@ -824,3 +825,69 @@ async def delete_comment(post_id: str, comment_id: str, user: dict = Depends(get
     if r.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Commentaire introuvable")
     return {"message": "Supprimé"}
+
+
+# ================= learner (ADULT_LEARNER) =================
+FORMATION_TYPES = ["Centre de formation", "Établissement professionnel"]
+LEARNER_LEVEL_MAP = {"Collège": "Collège", "Lycée": "Lycée", "Formation professionnelle": "Formation professionnelle",
+                     "Licence": "Formation professionnelle", "Master": "Formation professionnelle", "Doctorat": "Formation professionnelle", "Autre": None}
+
+
+@router.get("/learner/overview")
+async def learner_overview(user: dict = Depends(require_roles("ADULT_LEARNER", "PARENT"))):
+    uid = user["user_id"]
+    return {"bookings": await db.bookings.count_documents({"client_user_id": uid}),
+            "requests": await db.tutoring_requests.count_documents({"requester_user_id": uid}),
+            "favorite_educators": await db.favorites.count_documents({"user_id": uid, "target_type": "educator"}),
+            "favorite_schools": await db.favorites.count_documents({"user_id": uid, "target_type": "school"}),
+            "following": await db.school_follows.count_documents({"user_id": uid}),
+            "searches": await db.zone_alerts.count_documents({"user_id": uid}),
+            "enrollments": await db.enrollment_requests.count_documents({"parent_user_id": uid})}
+
+
+@router.get("/learner/recommendations")
+async def learner_recommendations(user: dict = Depends(require_roles("ADULT_LEARNER", "PARENT"))):
+    lp = user.get("learner_profile") or {}
+    subjects = set(lp.get("subjects", []))
+    region = (lp.get("location") or user.get("city") or "").strip()
+    level = LEARNER_LEVEL_MAP.get(lp.get("study_level", ""), None)
+    edus = await db.educator_profiles.find({"active": True}, {"_id": 0}).to_list(300)
+    users = {u["user_id"]: u async for u in db.users.find({"user_id": {"$in": [e["user_id"] for e in edus]}}, {"_id": 0, "user_id": 1, "name": 1, "avatar_url": 1})}
+    edu_out = []
+    for e in edus:
+        score, reasons = 0, []
+        common = subjects & set(e.get("subjects", []))
+        if common: score += 45; reasons.append(", ".join(list(common)[:2]))
+        if level and level in e.get("levels", []): score += 20; reasons.append(f"niveau {level}")
+        if region and region.lower() in (e.get("region", "") + " " + e.get("location", "")).lower(): score += 25; reasons.append("près de vous")
+        if e.get("is_verified"): score += 5
+        if (e.get("rating") or 0) >= 4.5: score += 5
+        u = users.get(e["user_id"], {})
+        edu_out.append({"user_id": e["user_id"], "name": u.get("name"), "avatar_url": u.get("avatar_url"), "photo": e.get("photo"), "profession": e.get("profession"),
+                        "subjects": e.get("subjects", []), "region": e.get("region"), "location": e.get("location"), "hourly_rate": e.get("hourly_rate"),
+                        "rating": e.get("rating", 0), "reviews_count": e.get("reviews_count", 0), "is_verified": e.get("is_verified", False),
+                        "match_score": min(100, score), "match_reasons": reasons})
+    edu_out.sort(key=lambda x: x["match_score"], reverse=True)
+    schools = await db.schools.find({"name": {"$exists": True}}, {"_id": 0}).to_list(300)
+    sch_out, form_out = [], []
+    for s in schools:
+        score, reasons = 0, []
+        if region and region.lower() in (s.get("region", "") + " " + s.get("city", "")).lower(): score += 30; reasons.append("dans votre zone")
+        if level and level in s.get("levels", []): score += 30; reasons.append(f"niveau {level}")
+        if subjects & set(s.get("subjects", [])): score += 20; reasons.append("vos matières")
+        if lp.get("field") and lp["field"].lower() in (s.get("description", "") + " " + s.get("programs", "")).lower(): score += 15; reasons.append("votre filière")
+        if s.get("enrollment_open"): score += 5; reasons.append("inscriptions ouvertes")
+        if s.get("is_verified"): score += 5
+        s["match_score"] = min(100, score); s["match_reasons"] = reasons
+        d = await decorate(s)
+        (form_out if s.get("school_type") in FORMATION_TYPES or "Formation professionnelle" in s.get("levels", []) else sch_out).append(d)
+    sch_out.sort(key=lambda x: x["match_score"], reverse=True); form_out.sort(key=lambda x: x["match_score"], reverse=True)
+    return {"educators": edu_out[:4], "schools": sch_out[:3], "formations": form_out[:3]}
+
+
+@router.get("/support/contact")
+async def support_contact():
+    admin = await db.users.find_one({"role": "ADMIN"}, {"_id": 0, "user_id": 1, "name": 1})
+    if not admin:
+        raise HTTPException(status_code=404, detail="Support indisponible")
+    return {"user_id": admin["user_id"], "name": "Support ASKOOL"}

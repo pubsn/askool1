@@ -106,6 +106,11 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Composant `PostReactions.jsx` utilisé sur profil public, fil d'actualités et « Mes publications » (l'école répond au nom de l'établissement)
 - Vérifié : curl + screenshot
 
+## Implemented (2026-06 — Profil apprenant)
+- Backend : `learner_profile` (statut, niveau, établissement, filière, matières, objectifs, localisation) via `PUT /users/me/profile` et exposé dans `/auth/me` ; `GET /learner/overview` ; `GET /learner/recommendations` (éducateurs / écoles / formations scorés) ; `GET /support/contact` (admin = Support ASKOOL)
+- Frontend : `LearnerProfile.jsx` = accueil du rôle ADULT_LEARNER (en-tête avec photo/statut/localisation, infos principales, confidentialité, « Mes activités », accès rapides dont « Trouver une formation », « Recommandé pour toi », fil d'actualités, dialog d'édition avec recadrage photo et confidentialité, bouton support) ; menu apprenant réorganisé ; `/dashboard/ecoles?type=formation` préfiltre Formation professionnelle
+- Vérifié : curl + screenshots
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

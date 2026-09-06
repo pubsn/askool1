@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, FileText, Inbox, Calendar, Star, Users, Briefcase, ShieldCheck, CreditCard, PlusCircle, Search, Building2, Heart, MessageSquare, Newspaper, Bell } from "lucide-react";
 import SchoolCard from "@/components/SchoolCard";
+import LearnerProfile from "@/pages/dashboard/LearnerProfile";
 import { StatCard, PageHeader, Loader } from "@/components/common";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
@@ -15,6 +16,7 @@ export default function DashboardHome() {
 
   if (role === "ADMIN") return <AdminHome navigate={navigate} />;
   if (role === "SCHOOL") return <SchoolHome navigate={navigate} user={user} />;
+  if (role === "ADULT_LEARNER") return <LearnerProfile />;
   if (role === "PARENT" || role === "ADULT_LEARNER") return <ParentHome navigate={navigate} user={user} role={role} />;
   return <EducatorHome navigate={navigate} user={user} />;
 }

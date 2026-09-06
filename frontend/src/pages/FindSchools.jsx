@@ -27,7 +27,7 @@ export default function FindSchools({ embedded = false }) {
   const [center, setCenter] = useState(null);
   const [radius, setRadius] = useState(15);
   const [compare, setCompare] = useState([]);
-  const [f, setF] = useState(EMPTY);
+  const [f, setF] = useState(() => new URLSearchParams(window.location.search).get("type") === "formation" ? { ...EMPTY, level: "Formation professionnelle" } : EMPTY);
 
   useEffect(() => {
     api.get("/meta").then(({ data }) => setMeta(data)).catch(() => {});

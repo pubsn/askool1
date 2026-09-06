@@ -59,7 +59,7 @@ def _public_user(u: dict) -> dict:
         "avatar_url": u.get("avatar_url"), "email_verified": u.get("email_verified", False),
         "is_premium": u.get("is_premium", False), "phone": u.get("phone"),
         "created_at": u.get("created_at"), "city": u.get("city", ""), "preferred_language": u.get("preferred_language", ""),
-        "search_prefs": u.get("search_prefs", {}), "privacy": u.get("privacy", {}), "notification_prefs": u.get("notification_prefs", {}),
+        "search_prefs": u.get("search_prefs", {}), "privacy": u.get("privacy", {}), "notification_prefs": u.get("notification_prefs", {}), "learner_profile": u.get("learner_profile", {}),
     }
 
 
