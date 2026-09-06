@@ -523,14 +523,16 @@ async def update_post(post_id: str, body: PostBody, user: dict = Depends(require
 async def posts_stats(user: dict = Depends(require_roles("SCHOOL"))):
     school = await db.schools.find_one({"user_id": user["user_id"]}, {"_id": 0, "school_id": 1}) or {}
     posts = await db.school_posts.find({"school_user_id": user["user_id"]}, {"_id": 0, "views": 1, "notified": 1}).to_list(500)
-    return {"posts": len(posts), "views": sum(p.get("views", 0) for p in posts), "reached": sum(p.get("notified", 0) for p in posts),
+    ids = [p["post_id"] for p in await db.school_posts.find({"school_user_id": user["user_id"]}, {"_id": 0, "post_id": 1}).to_list(500)]
+    interactions = await db.post_likes.count_documents({"post_id": {"$in": ids}}) + await db.post_comments.count_documents({"post_id": {"$in": ids}, "is_school": False})
+    return {"posts": len(posts), "views": sum(p.get("views", 0) for p in posts), "reached": sum(p.get("notified", 0) for p in posts), "interactions": interactions,
             "followers": await db.school_follows.count_documents({"school_id": school.get("school_id")}) if school else 0}
 
 
 @router.get("/schools/me/posts")
 async def my_posts(user: dict = Depends(require_roles("SCHOOL"))):
     docs = await db.school_posts.find({"school_user_id": user["user_id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
-    return {"results": docs}
+    return {"results": await reaction_counts(docs, user)}
 
 
 @router.delete("/schools/me/posts/{post_id}")
@@ -542,10 +544,11 @@ async def delete_post(post_id: str, user: dict = Depends(require_roles("SCHOOL")
 
 
 @router.get("/schools/{school_id}/posts")
-async def school_posts(school_id: str):
+async def school_posts(school_id: str, request: Request):
+    viewer = await optional_user(request)
     docs = await db.school_posts.find({"school_id": school_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
     await db.school_posts.update_many({"school_id": school_id}, {"$inc": {"views": 1}})
-    return {"results": docs}
+    return {"results": await reaction_counts(docs, viewer)}
 
 
 @router.get("/feed")
@@ -558,7 +561,7 @@ async def news_feed(user: dict = Depends(get_current_user), limit: int = 20):
     logos = {s["school_id"]: s.get("logo") async for s in db.schools.find({"school_id": {"$in": ids}}, {"_id": 0, "school_id": 1, "logo": 1})}
     for d in docs:
         d["school_logo"] = logos.get(d["school_id"])
-    return {"results": docs, "following_count": len(ids)}
+    return {"results": await reaction_counts(docs, user), "following_count": len(ids)}
 
 
 # ================= parent: compare / recommendations / reviews / enrollment =================
@@ -746,3 +749,78 @@ async def parent_overview(user: dict = Depends(require_roles("PARENT", "ADULT_LE
             "pending_requests": await db.enrollment_requests.count_documents({"parent_user_id": uid, "status": {"$in": ["Envoyée", "Consultée", "En cours"]}})
             + await db.tutoring_requests.count_documents({"requester_user_id": uid, "status": "Ouverte"}),
             "conversations": len(convs)}
+
+
+# ================= post reactions (likes + comments) =================
+async def reaction_counts(posts: list, viewer: Optional[dict]):
+    ids = [p["post_id"] for p in posts]
+    if not ids:
+        return posts
+    likes = {d["_id"]: d["n"] async for d in db.post_likes.aggregate([{"$match": {"post_id": {"$in": ids}}}, {"$group": {"_id": "$post_id", "n": {"$sum": 1}}}])}
+    comments = {d["_id"]: d["n"] async for d in db.post_comments.aggregate([{"$match": {"post_id": {"$in": ids}}}, {"$group": {"_id": "$post_id", "n": {"$sum": 1}}}])}
+    mine = set()
+    if viewer:
+        mine = {d["post_id"] async for d in db.post_likes.find({"post_id": {"$in": ids}, "user_id": viewer["user_id"]}, {"_id": 0, "post_id": 1})}
+    for p in posts:
+        p["likes_count"] = likes.get(p["post_id"], 0)
+        p["comments_count"] = comments.get(p["post_id"], 0)
+        p["liked"] = p["post_id"] in mine
+    return posts
+
+
+@router.post("/posts/{post_id}/like")
+async def toggle_like(post_id: str, user: dict = Depends(get_current_user)):
+    post = await db.school_posts.find_one({"post_id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Publication introuvable")
+    existing = await db.post_likes.find_one({"post_id": post_id, "user_id": user["user_id"]})
+    if existing:
+        await db.post_likes.delete_one({"_id": existing["_id"]})
+    else:
+        await db.post_likes.insert_one({"post_id": post_id, "user_id": user["user_id"], "created_at": now_iso()})
+    return {"liked": not existing, "likes_count": await db.post_likes.count_documents({"post_id": post_id})}
+
+
+class CommentBody(BaseModel):
+    content: str
+
+
+@router.get("/posts/{post_id}/comments")
+async def list_comments(post_id: str):
+    docs = await db.post_comments.find({"post_id": post_id}, {"_id": 0}).sort("created_at", 1).to_list(200)
+    return {"results": docs}
+
+
+@router.post("/posts/{post_id}/comments")
+async def add_comment(post_id: str, body: CommentBody, user: dict = Depends(get_current_user)):
+    if not body.content.strip():
+        raise HTTPException(status_code=400, detail="Commentaire vide")
+    post = await db.school_posts.find_one({"post_id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Publication introuvable")
+    is_school = user["user_id"] == post["school_user_id"]
+    doc = {"comment_id": new_id("cmt"), "post_id": post_id, "user_id": user["user_id"], "author_name": post["school_name"] if is_school else user.get("name"),
+           "author_avatar": user.get("avatar_url"), "is_school": is_school, "content": body.content.strip()[:1000], "created_at": now_iso()}
+    await db.post_comments.insert_one(doc)
+    link = f"/ecoles/{post.get('school_slug')}#actualites"
+    if is_school:
+        others = {c["user_id"] async for c in db.post_comments.find({"post_id": post_id, "is_school": False}, {"_id": 0, "user_id": 1})}
+        for uid in others:
+            await notify(uid, "post_reply", f"{post['school_name']} a répondu", f"Sur « {post['title']} » : {doc['content'][:80]}", link)
+    else:
+        await notify(post["school_user_id"], "post_comment", "Nouveau commentaire", f"{user.get('name')} sur « {post['title']} » : {doc['content'][:80]}", "/dashboard/actualites")
+    return {"comment": {k: v for k, v in doc.items() if k != "_id"}}
+
+
+@router.delete("/posts/{post_id}/comments/{comment_id}")
+async def delete_comment(post_id: str, comment_id: str, user: dict = Depends(get_current_user)):
+    post = await db.school_posts.find_one({"post_id": post_id}, {"_id": 0, "school_user_id": 1})
+    if not post:
+        raise HTTPException(status_code=404, detail="Publication introuvable")
+    q = {"comment_id": comment_id, "post_id": post_id}
+    if user["user_id"] != post["school_user_id"] and user.get("role") != "ADMIN":
+        q["user_id"] = user["user_id"]
+    r = await db.post_comments.delete_one(q)
+    if r.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Commentaire introuvable")
+    return {"message": "Supprimé"}

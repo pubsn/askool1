@@ -101,6 +101,11 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Frontend : FindSchools (vue liste/carte `SchoolMap`, « Écoles près de moi », rayon, filtres familles, sélection Comparer) ; `CompareSchools` (`/comparer`, `/dashboard/comparer`) ; profil école : Infos pratiques, FAQ, Avis + formulaire, « Demander des informations » (sujets), « Demander une inscription », toggle actualités ; `EnrollmentRequests` (`/dashboard/inscriptions` parent/école) ; `Feed` (`/dashboard/fil`) ; Settings parent = Mon profil (infos, préférences de recherche, confidentialité, notifications) + `AvatarCropUpload` (recadrage canvas, suppression) ; Students enrichi (édition/suppression) ; ParentHome (stats, recommandations par enfant, fil) ; menus parent/école réorganisés ; SchoolNews (stats, édition, vidéo, images multiples) ; onglets école « Infos pratiques » et « FAQ »
 - Seed : `enrich_practical()` idempotent (Sainte-Marie, El Hadji Malick)
 
+## Implemented (2026-06 — Réactions actualités)
+- `POST /posts/{id}/like` (toggle), `GET/POST /posts/{id}/comments`, `DELETE /posts/{id}/comments/{cid}` (auteur, école ou admin) ; réponses école marquées `is_school` ; notifs `post_comment` (école) / `post_reply` (commentateurs) ; compteurs `likes_count/comments_count/liked` sur profil public, feed et posts école ; stat « Interactions » dans `/schools/me/posts/stats`
+- Composant `PostReactions.jsx` utilisé sur profil public, fil d'actualités et « Mes publications » (l'école répond au nom de l'établissement)
+- Vérifié : curl + screenshot
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

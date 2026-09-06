@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Newspaper, Building2, ArrowRight } from "lucide-react";
 import { CAT_COLORS } from "@/pages/dashboard/SchoolNews";
 import api from "@/lib/api";
+import PostReactions from "@/components/PostReactions";
 
 const timeAgo = (iso) => { const m = Math.floor((Date.now() - new Date(iso)) / 60000); if (m < 60) return `Il y a ${Math.max(1, m)} min`; const h = Math.floor(m / 60); if (h < 24) return `Il y a ${h} h`; const d = Math.floor(h / 24); return d < 7 ? `Il y a ${d} j` : new Date(iso).toLocaleDateString("fr-FR"); };
 
@@ -31,6 +32,7 @@ export default function NewsFeed({ limit = 6 }) {
                 <div className="mt-0.5 font-display text-sm font-semibold text-gray-900">{p.title}</div>
                 <p className="text-sm text-gray-600">{p.content}</p>
                 {(p.images?.length > 0 || p.image) && <div className="mt-2 flex gap-2">{(p.images?.length ? p.images : [p.image]).slice(0, 4).map((u, i) => <img key={i} src={u} alt="" className="h-16 w-16 rounded-lg object-cover" />)}</div>}
+                <PostReactions post={p} schoolUserId={p.school_user_id} />
                 <button data-testid={`feed-view-school-${p.post_id}`} onClick={() => navigate(`/ecoles/${p.school_slug}#actualites`)} className="mt-2 text-xs font-medium text-askool-blue hover:underline">Voir l'école →</button>
               </div>
             </div>

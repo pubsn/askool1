@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import FileUpload from "@/components/FileUpload";
 import api, { API_ROOT } from "@/lib/api";
+import PostReactions from "@/components/PostReactions";
+import { useAuth } from "@/context/AuthContext";
 
 export const CAT_COLORS = { "Actualité": "bg-askool-bluelight text-askool-blue", "Événement": "bg-emerald-50 text-emerald-700", "Inscription": "bg-emerald-100 text-emerald-800", "Vie scolaire": "bg-sky-50 text-sky-700", "Résultats": "bg-violet-50 text-violet-700", "Information aux parents": "bg-amber-50 text-amber-700", "Activité": "bg-teal-50 text-teal-700", "Besoin de recrutement": "bg-askool-orangelight text-askool-orangehover", "Annonce": "bg-gray-100 text-gray-700" };
 const EMPTY = { title: "", content: "", category: "Actualité", images: [], video_url: "" };
 
 export default function SchoolNews() {
+  const { user } = useAuth();
   const [posts, setPosts] = useState(null);
   const [cats, setCats] = useState(Object.keys(CAT_COLORS));
   const [stats, setStats] = useState({});
@@ -39,7 +42,7 @@ export default function SchoolNews() {
         <StatCard icon={Newspaper} label="Publications" value={stats.posts || 0} testId="news-stat-posts" />
         <StatCard icon={Eye} label="Vues" value={stats.views || 0} accent="orange" testId="news-stat-views" />
         <StatCard icon={Users} label="Abonnés" value={stats.followers || 0} accent="green" testId="news-stat-followers" />
-        <StatCard icon={BarChart3} label="Abonnés atteints" value={stats.reached || 0} testId="news-stat-reached" />
+        <StatCard icon={BarChart3} label="Interactions" value={stats.interactions || 0} testId="news-stat-interactions" />
       </div>
       <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm" data-testid="news-form">
         {editing && <div className="mb-3 flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800"><span>Modification d'une publication</span><button onClick={() => { setEditing(null); setF(EMPTY); }} className="underline">Annuler</button></div>}
@@ -64,6 +67,7 @@ export default function SchoolNews() {
                 <div className="flex flex-wrap items-center gap-2"><span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${CAT_COLORS[p.category] || "bg-gray-100"}`}>{p.category}</span><span className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleDateString("fr-FR")} · {p.views || 0} vues · {p.notified || 0} notifiés</span></div>
                 <h3 className="mt-1 font-display font-semibold text-gray-900">{p.title}</h3>
                 <p className="mt-1 whitespace-pre-line text-sm text-gray-700">{p.content}</p>
+                <PostReactions post={p} schoolUserId={user?.user_id} defaultOpen={(p.comments_count || 0) > 0} />
               </div>
               <div className="flex flex-col gap-2 self-start"><button data-testid={`news-edit-${p.post_id}`} onClick={() => startEdit(p)} className="text-gray-400 hover:text-askool-blue"><Pencil size={16} /></button><button data-testid={`news-delete-${p.post_id}`} onClick={() => remove(p.post_id)} className="text-gray-400 hover:text-red-500"><Trash2 size={16} /></button></div>
             </div>

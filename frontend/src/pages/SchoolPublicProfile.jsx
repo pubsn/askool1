@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { MapPin, Building2, ShieldCheck, Heart, Bell, BellOff, MessageSquare, Globe, Phone, Mail, Facebook, Instagram, Linkedin, Navigation, GraduationCap, Users, Calendar, Languages, BookOpen, Trophy, School, HandHelping, Image as ImageIcon, Briefcase, Lock, ZoomIn, Newspaper, ClipboardList, HelpCircle, Star } from "lucide-react";
 import { CAT_COLORS } from "@/pages/dashboard/SchoolNews";
+import PostReactions from "@/components/PostReactions";
 import { toast } from "sonner";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -217,6 +218,7 @@ export default function SchoolPublicProfile() {
                         <p className="mt-1 whitespace-pre-line text-sm text-gray-700">{p.content}</p>
                         {p.images?.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{p.images.map((u, i) => <button key={i} onClick={() => setZoom({ url: u, caption: p.title })}><img src={u} alt="" className="h-16 w-16 rounded-lg object-cover" /></button>)}</div>}
                         {yt(p.video_url) && <iframe title={p.title} src={yt(p.video_url)} className="mt-2 aspect-video w-full max-w-md rounded-lg" allowFullScreen />}
+                        <PostReactions post={p} schoolUserId={s.user_id} />
                       </div>
                     </div>
                   ))}
