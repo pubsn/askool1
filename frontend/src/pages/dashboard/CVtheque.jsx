@@ -43,7 +43,7 @@ export default function CVtheque() {
           {data.results.map((e) => (
             <div key={e.user_id} data-testid={`cv-card-${e.user_id}`} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <div className="flex gap-3">
-                <img src={e.photo} alt={e.name} className="h-16 w-16 rounded-xl object-cover" />
+                <img src={e.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(e.name || "A")}&background=eef2fc&color=203c89`} alt={e.name} className="h-16 w-16 rounded-xl object-cover" />
                 <div className="min-w-0 flex-1">
                   <h3 className="truncate font-display font-semibold text-gray-900">{e.name}</h3>
                   <p className="truncate text-sm text-askool-blue">{e.profession}</p>

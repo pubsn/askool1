@@ -1221,6 +1221,8 @@ async def serve_file(file_id: str, request: Request = None, authorization: str =
         data, ct = await asyncio.to_thread(get_object, rec["storage_path"])
     except Exception as e:
         logger.error(f"Serve file failed: {e}")
+        # Orphan record (object missing in storage): soft-delete so clients stop requesting it
+        await db.files.update_one({"file_id": file_id}, {"$set": {"is_deleted": True}})
         raise HTTPException(status_code=404, detail="Fichier indisponible")
     return Response(content=data, media_type=rec.get("content_type", ct))
 

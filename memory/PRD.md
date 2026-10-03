@@ -120,6 +120,11 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Aucune modification fonctionnelle, de route ou de structure de page
 - Vérifié iteration_11 : 4 rôles (49 liens de menu) + 10 pages publiques sans régression, flux « Profil Apprenant » validé e2e (édition + persistance), mobile 390px sans débordement
 
+## Fixed (2026-06 — Nettoyage console)
+- `GET /api/files/{id}` : si l'objet est absent du stockage, l'enregistrement est auto-marqué `is_deleted` → plus de requêtes 404 répétées (fichiers orphelins d'anciens tests). Vérifié : 404 au 1er chargement puis console propre après rechargement
+- `SecureFile.jsx` : fallback « Document indisponible » au lieu d'un squelette de chargement infini
+- `CVtheque.jsx` : avatar de secours aux couleurs ASKOOL au lieu d'un `img src=""` (warning React supprimé)
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium
