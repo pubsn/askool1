@@ -19,6 +19,7 @@ import AvatarCropUpload from "@/components/AvatarCropUpload";
 import EducatorCard from "@/components/EducatorCard";
 import SchoolCard from "@/components/SchoolCard";
 import NewsFeed from "@/components/NewsFeed";
+import LearningPath from "@/components/LearningPath";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -93,8 +94,9 @@ export default function LearnerProfile() {
         </div>
       </div>
 
-      <h2 className="mb-3 mt-8 font-display text-lg font-semibold text-gray-900">Mes activités</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6"><LearningPath /></div>
+
+      <h2 className="mb-3 mt-8 font-display text-lg font-semibold text-gray-900">Mes activités</h2>      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Act icon={Calendar} label="Mes cours" value={ov.bookings} to="/dashboard/reservations" testId="act-bookings" />
         <Act icon={FileText} label="Mes demandes" value={(ov.requests || 0) + (ov.enrollments || 0)} to="/dashboard/demandes" testId="act-requests" />
         <Act icon={Heart} label="Mes éducateurs favoris" value={ov.favorite_educators} to="/dashboard/favoris" testId="act-fav-educators" />

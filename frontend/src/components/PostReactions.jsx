@@ -4,6 +4,7 @@ import { Heart, MessageCircle, Send, Trash2, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
+import SharePost from "@/components/SharePost";
 import { useAuth } from "@/context/AuthContext";
 
 export default function PostReactions({ post, schoolUserId, defaultOpen = false }) {
@@ -30,7 +31,8 @@ export default function PostReactions({ post, schoolUserId, defaultOpen = false 
     <div className="mt-3" data-testid={`reactions-${post.post_id}`}>
       <div className="flex items-center gap-4 text-sm">
         <button data-testid={`like-${post.post_id}`} onClick={like} disabled={isOwner} className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors ${liked ? "bg-red-50 text-red-500" : "text-gray-500 hover:bg-gray-100"} ${isOwner ? "cursor-default" : ""}`}><Heart size={15} className={liked ? "fill-red-500" : ""} /> {likes}</button>
-        <button data-testid={`comments-toggle-${post.post_id}`} onClick={() => setOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-gray-500 hover:bg-gray-100"><MessageCircle size={15} /> {count} commentaire{count > 1 ? "s" : ""}</button>
+        <button data-testid={`comments-toggle-${post.post_id}`} onClick={() => setOpen((v) => !v)} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-askool-text transition-colors hover:bg-askool-bluelight hover:text-askool-blue"><MessageCircle size={15} /> {count} commentaire{count > 1 ? "s" : ""}</button>
+        {post.school_slug && <SharePost post={post} />}
       </div>
       {open && (
         <div className="mt-3 space-y-2 rounded-xl bg-gray-50 p-3" data-testid={`comments-${post.post_id}`}>

@@ -21,7 +21,7 @@ from auth import get_current_user, require_roles
 from constants import (SUBJECTS, LEVELS, SERVICE_TYPES, REGIONS, LANGUAGES,
                        CONTRACT_TYPES, DIPLOMAS, REGION_COORDS, region_latlng)
 from seed_data import seed_demo_data, enrich_schools, enrich_practical
-from schools_routes import router as schools_router, optional_user
+from schools_routes import router as schools_router, optional_user, publish_scheduled_posts
 from storage import put_object, get_object, init_storage, APP_NAME, MIME_TYPES
 import jwt as _jwt
 from auth import _secret, JWT_ALGORITHM
@@ -1049,6 +1049,16 @@ async def cron_lesson_reminders(background_tasks: BackgroundTasks, authorization
     if not secret or not hmac.compare_digest(token, secret):
         raise HTTPException(status_code=401, detail="Unauthorized")
     background_tasks.add_task(_run_lesson_reminders)
+    return {"accepted": True}
+
+
+@api.post("/cron/publish-scheduled-posts")
+async def cron_publish_scheduled_posts(background_tasks: BackgroundTasks, authorization: str = Header(None)):
+    secret = os.environ.get("WEBHOOK_CRON_SECRET", "")
+    token = authorization[7:] if (authorization or "").startswith("Bearer ") else ""
+    if not secret or not hmac.compare_digest(token, secret):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    background_tasks.add_task(publish_scheduled_posts)
     return {"accepted": True}
 
 

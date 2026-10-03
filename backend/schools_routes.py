@@ -480,6 +480,49 @@ class PostBody(BaseModel):
     image: Optional[str] = None
     images: List[str] = []
     video_url: str = ""
+    scheduled_at: Optional[str] = None
+
+
+# Published posts are the only ones visible publicly (legacy docs have no status field).
+PUBLISHED_Q = {"$or": [{"status": "published"}, {"status": {"$exists": False}}]}
+
+
+def _is_future(iso: Optional[str]) -> bool:
+    if not iso:
+        return False
+    try:
+        dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt > datetime.now(timezone.utc)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Date de programmation invalide")
+
+
+async def notify_post_followers(school: dict, post: dict) -> int:
+    notified = 0
+    async for f in db.school_follows.find({"school_id": school["school_id"]}, {"_id": 0, "user_id": 1, "notify": 1}):
+        if f.get("notify", True) is False:
+            continue
+        u = await db.users.find_one({"user_id": f["user_id"]}, {"_id": 0, "notification_prefs": 1})
+        if (u or {}).get("notification_prefs", {}).get("school_news", True) is False:
+            continue
+        await notify(f["user_id"], "school_post", f"{post['category']} — {school['name']}", post["title"],
+                     f"/ecoles/{school.get('slug')}#actualites")
+        notified += 1
+    return notified
+
+
+async def publish_scheduled_posts() -> int:
+    """Publishes every scheduled post whose time has come and notifies followers."""
+    now = now_iso()
+    due = await db.school_posts.find({"status": "scheduled", "scheduled_at": {"$lte": now}}, {"_id": 0}).to_list(200)
+    for p in due:
+        school = await db.schools.find_one({"school_id": p["school_id"]}, {"_id": 0})
+        notified = await notify_post_followers(school, p) if school else 0
+        await db.school_posts.update_one({"post_id": p["post_id"]},
+                                         {"$set": {"status": "published", "published_at": now_iso(), "notified": notified}})
+    return len(due)
 
 
 @router.post("/schools/me/posts")
@@ -491,32 +534,60 @@ async def create_post(body: PostBody, user: dict = Depends(require_roles("SCHOOL
         raise HTTPException(status_code=400, detail="Titre et contenu requis")
     if body.category not in POST_CATEGORIES:
         raise HTTPException(status_code=400, detail="Catégorie invalide")
+    scheduled = _is_future(body.scheduled_at)
     doc = {"post_id": new_id("post"), "school_id": school["school_id"], "school_user_id": user["user_id"],
            "school_name": school["name"], "school_slug": school.get("slug"), **body.model_dump(),
+           "status": "scheduled" if scheduled else "published",
+           "published_at": None if scheduled else now_iso(),
            "views": 0, "notified": 0, "created_at": now_iso()}
-    notified = 0
-    async for f in db.school_follows.find({"school_id": school["school_id"]}, {"_id": 0, "user_id": 1, "notify": 1}):
-        if f.get("notify", True) is False:
-            continue
-        u = await db.users.find_one({"user_id": f["user_id"]}, {"_id": 0, "notification_prefs": 1})
-        if (u or {}).get("notification_prefs", {}).get("school_news", True) is False:
-            continue
-        await notify(f["user_id"], "school_post", f"{body.category} — {school['name']}", body.title, f"/ecoles/{school.get('slug')}#actualites")
-        notified += 1
+    if not scheduled:
+        doc["scheduled_at"] = None
+    notified = 0 if scheduled else await notify_post_followers(school, doc)
     doc["notified"] = notified
     await db.school_posts.insert_one(doc)
-    return {"post": {k: v for k, v in doc.items() if k != "_id"}, "notified": notified}
+    return {"post": {k: v for k, v in doc.items() if k != "_id"}, "notified": notified, "scheduled": scheduled}
 
 
 @router.put("/schools/me/posts/{post_id}")
 async def update_post(post_id: str, body: PostBody, user: dict = Depends(require_roles("SCHOOL"))):
     if body.category not in POST_CATEGORIES:
         raise HTTPException(status_code=400, detail="Catégorie invalide")
-    r = await db.school_posts.update_one({"post_id": post_id, "school_user_id": user["user_id"]},
-                                         {"$set": {**body.model_dump(), "updated_at": now_iso()}})
-    if r.matched_count == 0:
+    post = await db.school_posts.find_one({"post_id": post_id, "school_user_id": user["user_id"]}, {"_id": 0})
+    if not post:
         raise HTTPException(status_code=404, detail="Actualité introuvable")
+    data = {**body.model_dump(), "updated_at": now_iso()}
+    if post.get("status", "published") == "published":
+        # an already published post keeps its status; scheduling only applies to pending posts
+        data.pop("scheduled_at", None)
+    else:
+        data["status"] = "scheduled" if _is_future(body.scheduled_at) else "draft"
+    await db.school_posts.update_one({"post_id": post_id}, {"$set": data})
     return {"post": await db.school_posts.find_one({"post_id": post_id}, {"_id": 0})}
+
+
+@router.post("/schools/me/posts/{post_id}/publish-now")
+async def publish_post_now(post_id: str, user: dict = Depends(require_roles("SCHOOL"))):
+    post = await db.school_posts.find_one({"post_id": post_id, "school_user_id": user["user_id"]}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Actualité introuvable")
+    if post.get("status", "published") == "published":
+        raise HTTPException(status_code=400, detail="Publication déjà en ligne")
+    school = await db.schools.find_one({"school_id": post["school_id"]}, {"_id": 0})
+    notified = await notify_post_followers(school, post) if school else 0
+    await db.school_posts.update_one({"post_id": post_id}, {"$set": {"status": "published", "scheduled_at": None,
+                                                                     "published_at": now_iso(), "notified": notified}})
+    return {"message": "Publiée", "notified": notified}
+
+
+@router.post("/schools/me/posts/{post_id}/unschedule")
+async def unschedule_post(post_id: str, user: dict = Depends(require_roles("SCHOOL"))):
+    post = await db.school_posts.find_one({"post_id": post_id, "school_user_id": user["user_id"]}, {"_id": 0})
+    if not post:
+        raise HTTPException(status_code=404, detail="Actualité introuvable")
+    if post.get("status") != "scheduled":
+        raise HTTPException(status_code=400, detail="Cette publication n'est pas programmée")
+    await db.school_posts.update_one({"post_id": post_id}, {"$set": {"status": "draft", "scheduled_at": None}})
+    return {"message": "Programmation annulée"}
 
 
 @router.get("/schools/me/posts/stats")
@@ -526,6 +597,7 @@ async def posts_stats(user: dict = Depends(require_roles("SCHOOL"))):
     ids = [p["post_id"] for p in await db.school_posts.find({"school_user_id": user["user_id"]}, {"_id": 0, "post_id": 1}).to_list(500)]
     interactions = await db.post_likes.count_documents({"post_id": {"$in": ids}}) + await db.post_comments.count_documents({"post_id": {"$in": ids}, "is_school": False})
     return {"posts": len(posts), "views": sum(p.get("views", 0) for p in posts), "reached": sum(p.get("notified", 0) for p in posts), "interactions": interactions,
+            "scheduled": await db.school_posts.count_documents({"school_user_id": user["user_id"], "status": "scheduled"}),
             "followers": await db.school_follows.count_documents({"school_id": school.get("school_id")}) if school else 0}
 
 
@@ -546,8 +618,9 @@ async def delete_post(post_id: str, user: dict = Depends(require_roles("SCHOOL")
 @router.get("/schools/{school_id}/posts")
 async def school_posts(school_id: str, request: Request):
     viewer = await optional_user(request)
-    docs = await db.school_posts.find({"school_id": school_id}, {"_id": 0}).sort("created_at", -1).to_list(50)
-    await db.school_posts.update_many({"school_id": school_id}, {"$inc": {"views": 1}})
+    q = {"school_id": school_id, **PUBLISHED_Q}
+    docs = await db.school_posts.find(q, {"_id": 0}).sort("created_at", -1).to_list(50)
+    await db.school_posts.update_many(q, {"$inc": {"views": 1}})
     return {"results": await reaction_counts(docs, viewer)}
 
 
@@ -557,7 +630,7 @@ async def news_feed(user: dict = Depends(get_current_user), limit: int = 20):
     ids = [f["school_id"] for f in follows]
     if not ids:
         return {"results": [], "following_count": 0}
-    docs = await db.school_posts.find({"school_id": {"$in": ids}}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    docs = await db.school_posts.find({"school_id": {"$in": ids}, **PUBLISHED_Q}, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
     logos = {s["school_id"]: s.get("logo") async for s in db.schools.find({"school_id": {"$in": ids}}, {"_id": 0, "school_id": 1, "logo": 1})}
     for d in docs:
         d["school_logo"] = logos.get(d["school_id"])
@@ -740,7 +813,7 @@ async def parent_overview(user: dict = Depends(require_roles("PARENT", "ADULT_LE
     follows = await db.school_follows.find({"user_id": uid}, {"_id": 0, "school_id": 1}).to_list(200)
     ids = [f["school_id"] for f in follows]
     since = user.get("last_feed_seen") or "1970"
-    new_posts = await db.school_posts.count_documents({"school_id": {"$in": ids}, "created_at": {"$gt": since}}) if ids else 0
+    new_posts = await db.school_posts.count_documents({"school_id": {"$in": ids}, "created_at": {"$gt": since}, **PUBLISHED_Q}) if ids else 0
     convs = await db.conversations.find({"participants": uid}, {"_id": 0, "conversation_id": 1}).to_list(200)
     return {"students": await db.students.count_documents({"parent_user_id": uid}),
             "following": len(ids),
@@ -883,6 +956,77 @@ async def learner_recommendations(user: dict = Depends(require_roles("ADULT_LEAR
         (form_out if s.get("school_type") in FORMATION_TYPES or "Formation professionnelle" in s.get("levels", []) else sch_out).append(d)
     sch_out.sort(key=lambda x: x["match_score"], reverse=True); form_out.sort(key=lambda x: x["match_score"], reverse=True)
     return {"educators": edu_out[:4], "schools": sch_out[:3], "formations": form_out[:3]}
+
+
+# ================= learner progress (parcours d'apprentissage) =================
+class GoalBody(BaseModel):
+    label: str
+
+
+class GoalStatusBody(BaseModel):
+    done: bool
+
+
+def _goals(user: dict) -> list:
+    return list((user.get("learner_profile") or {}).get("goals_list") or [])
+
+
+async def _save_goals(user_id: str, goals: list):
+    await db.users.update_one({"user_id": user_id}, {"$set": {"learner_profile.goals_list": goals, "updated_at": now_iso()}})
+
+
+@router.get("/learner/progress")
+async def learner_progress(user: dict = Depends(require_roles("ADULT_LEARNER", "PARENT"))):
+    uid = user["user_id"]
+    bookings = await db.bookings.find({"client_user_id": uid}, {"_id": 0, "status": 1, "duration_hours": 1, "subject": 1, "date": 1,
+                                                                "educator_name": 1, "time": 1}).to_list(500)
+    done = [b for b in bookings if b.get("status") == "Terminé"]
+    upcoming = sorted([b for b in bookings if b.get("status") in ("Confirmé", "En attente")], key=lambda b: (b.get("date") or "", b.get("time") or ""))
+    goals = _goals(user)
+    goals_done = len([g for g in goals if g.get("done")])
+    steps = len(goals) + (1 if bookings else 0)
+    reached = goals_done + (1 if done else 0)
+    return {"lessons_total": len(bookings), "lessons_done": len(done),
+            "hours": round(sum(float(b.get("duration_hours") or 1) for b in done), 1),
+            "subjects": sorted({b.get("subject") for b in done if b.get("subject")}),
+            "goals": goals, "goals_done": goals_done,
+            "percent": round(100 * reached / steps) if steps else 0,
+            "next_lesson": upcoming[0] if upcoming else None}
+
+
+@router.post("/learner/goals")
+async def add_goal(body: GoalBody, user: dict = Depends(require_roles("ADULT_LEARNER", "PARENT"))):
+    if not body.label.strip():
+        raise HTTPException(status_code=400, detail="Intitulé requis")
+    goals = _goals(user)
+    if len(goals) >= 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 objectifs")
+    goal = {"goal_id": new_id("goal"), "label": body.label.strip()[:160], "done": False, "created_at": now_iso()}
+    goals.append(goal)
+    await _save_goals(user["user_id"], goals)
+    return {"goal": goal, "goals": goals}
+
+
+@router.put("/learner/goals/{goal_id}")
+async def set_goal_status(goal_id: str, body: GoalStatusBody, user: dict = Depends(require_roles("ADULT_LEARNER", "PARENT"))):
+    goals = _goals(user)
+    target = next((g for g in goals if g["goal_id"] == goal_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="Objectif introuvable")
+    target["done"] = body.done
+    target["completed_at"] = now_iso() if body.done else None
+    await _save_goals(user["user_id"], goals)
+    return {"goals": goals}
+
+
+@router.delete("/learner/goals/{goal_id}")
+async def delete_goal(goal_id: str, user: dict = Depends(require_roles("ADULT_LEARNER", "PARENT"))):
+    goals = _goals(user)
+    remaining = [g for g in goals if g["goal_id"] != goal_id]
+    if len(remaining) == len(goals):
+        raise HTTPException(status_code=404, detail="Objectif introuvable")
+    await _save_goals(user["user_id"], remaining)
+    return {"goals": remaining}
 
 
 @router.get("/support/contact")
