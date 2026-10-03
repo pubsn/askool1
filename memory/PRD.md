@@ -111,6 +111,15 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Frontend : `LearnerProfile.jsx` = accueil du rôle ADULT_LEARNER (en-tête avec photo/statut/localisation, infos principales, confidentialité, « Mes activités », accès rapides dont « Trouver une formation », « Recommandé pour toi », fil d'actualités, dialog d'édition avec recadrage photo et confidentialité, bouton support) ; menu apprenant réorganisé ; `/dashboard/ecoles?type=formation` préfiltre Formation professionnelle
 - Vérifié : curl + screenshots
 
+## Implemented (2026-06 — Refonte visuelle du Design System) — vérifié iteration_11
+- Tokens centralisés : `tailwind.config.js` (askool.blue #203c89, bluedark/bluehover #16295e, bluelight #eef2fc, bluepale/border #dde4f4, surface #f4f6fc, orange #ee731f, orangehover #d45f11, orangelight #fdefe3, ink #000, text #4d5670, subtle #7b849c) + ombres `shadow-card`/`shadow-card-hover` + échelles de texte (page 34px / section 17px / corps 15px / libellé 14px)
+- Verrouillage palette : les échelles gray/slate/neutral/zinc/stone → gris ASKOOL ; blue/indigo/violet/purple/fuchsia/sky/cyan/teal → bleu ASKOOL ; orange/amber/yellow → orange ASKOOL. Seuls emerald/red subsistent (badges de statut, choix utilisateur)
+- `index.css` : variables CSS (`--askool-*`), polices Google **Poppins** (titres/chiffres/logo) + **Inter** (textes/menus/boutons), focus-visible bleu 2px, `prefers-reduced-motion`, classes `.askool-card` / `.askool-icon-chip`, vars shadcn (primary/border/muted/background) alignées sur la palette
+- Layouts : sidebar dashboard #16295e, textes blancs, item actif avec liseré + icône orange ; topbar blanche bordure bleu pâle, cloche bleue + badge orange, avatar bleu ; bottom-nav mobile ; header/footer publics alignés ; cartes blanches bordure #dde4f4
+- Composants : StatCard (valeurs nulles en #7b849c), PageHeader, EmptyState, Stars, PremiumBadge, PaymentDialog, CAT_COLORS (SchoolNews), maps de statut (Applications, Bookings, EnrollmentRequests)
+- Aucune modification fonctionnelle, de route ou de structure de page
+- Vérifié iteration_11 : 4 rôles (49 liens de menu) + 10 pages publiques sans régression, flux « Profil Apprenant » validé e2e (édition + persistance), mobile 390px sans débordement
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

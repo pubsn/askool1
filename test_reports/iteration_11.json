@@ -1,0 +1,69 @@
+{
+  "summary": "Iteration 11 — frontend-only regression after global visual redesign (new ASKOOL blue/orange tokens, Poppins/Inter fonts) + first full test of ADULT_LEARNER 'Mon profil' feature. All 4 role dashboards load without blank pages or page errors. Palette applied correctly (sidebar #16295e, surface #f4f6fc, header white). Learner edit/save/persistence works end-to-end. Public pages render. Mobile 390x844: sidebar hidden, bottom-nav visible, no horizontal overflow.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_results": {
+    "palette_check": {
+      "body_bg": "rgb(244, 246, 252)  (= #f4f6fc surface) ✓",
+      "sidebar_bg": "rgb(22, 41, 94)   (= #16295e blue-dark) ✓",
+      "header_bg": "rgb(255, 255, 255) (= white) ✓",
+      "focus_outline": "rgb(32, 60, 137) 2px (= #203c89 askool-blue) ✓",
+      "white_on_white_suspects": "none detected (programmatic scan of h1/h2/h3/a/button/span/p)"
+    },
+    "public_routes_200": ["/", "/educateurs", "/ecoles", "/emplois", "/pour-les-ecoles", "/comment-ca-marche", "/tarifs", "/a-propos", "/faq", "/contact"],
+    "learner_flow": {
+      "login": "apprenant@askool.sn / Askool2026! -> /dashboard (learner-profile visible)",
+      "edit_dialog": "edit-learner-profile -> learner-edit-dialog opens with all fields (lp-status, lp-level, lp-institution, lp-field, lp-location, lp-subjects, lp-objectives, lp-privacy-photo/city/study)",
+      "save": "lp-save -> toast 'Profil enregistré', dialog closes. (NB: implementation calls PUT /api/users/me/profile with learner_profile payload, NOT PUT /api/users/me/learner as mentioned in review request — functional equivalent).",
+      "persistence": "after full page reload, objective 'TEST_regression_1790987112' and field 'Informatique' persisted ✓",
+      "sidebar_links_tested_11": ["/dashboard", "/dashboard/tuteurs", "/dashboard/ecoles", "/dashboard/reservations", "/dashboard/demandes", "/dashboard/inscriptions", "/dashboard/favoris", "/dashboard/alertes", "/dashboard/fil", "/dashboard/messages", "/dashboard/parametres"],
+      "all_render": true,
+      "activities_cards": "Mes cours, Mes demandes, Mes éducateurs favoris, Mes écoles favorites, Mes écoles suivies, Mes recherches — all shown with values from /learner/overview",
+      "recommended_for_toi": "Section renders (loader -> content)."
+    },
+    "school_role": {
+      "sidebar": "12 links all load (dashboard, etablissement, actualites, inscriptions, publier, offres, candidatures, propositions, cvtheque, messages, abonnement, parametres)",
+      "minor_console": "/dashboard/cvtheque — React warning: 'An empty string was passed to the src attribute' (avatar fallback renders <img src=\"\">). Non-blocking, pre-existing."
+    },
+    "educator_role": {
+      "sidebar": "13 links all load (dashboard, profil, emplois, ecoles, opportunites, candidatures, propositions, reservations, favoris, messages, avis, abonnement, parametres)",
+      "minor_console": "2x 404 fired on /dashboard/profil (likely /educators/me-related missing data for a specific sub-call); page still renders content (len=1978). Pre-existing, not visual-redesign related."
+    },
+    "parent_role": {
+      "sidebar": "13 links all load",
+      "minor_console": "4x 404 on /dashboard/reservations (bookings endpoint); page still renders. Pre-existing."
+    },
+    "mobile_390x844": {
+      "role_tested": "PARENT",
+      "aside_display": "none (hidden on <lg) ✓",
+      "bottom_nav_display": "flex (visible) ✓",
+      "horizontal_overflow": false
+    }
+  },
+  "test_report_links": [],
+  "action_items": [
+    "(Minor) /dashboard/cvtheque: avatar <img> is rendered with src=\"\" when no avatar; replace with null/undefined or render fallback initials <span> instead to silence React warning.",
+    "(Minor) Review 404s on /dashboard/profil (EDUCATOR) and /dashboard/reservations (PARENT) — endpoints returning 404 probably triggered by a sub-fetch (feedback/reviews or legacy bookings). Investigate and either catch the 404 silently or ship the endpoint.",
+    "(Doc) The learner save path uses PUT /api/users/me/profile, not /api/users/me/learner as described in the review request. If a dedicated endpoint is intended, add it; otherwise update the spec/review wording."
+  ],
+  "critical_code_review_comments": [
+    "tailwind.config.js remaps violet/purple/fuchsia/sky/cyan/teal/indigo ALL to the askool blue scale. This is a one-way visual lockdown — great for enforcing the palette, but any future developer who adds <... className='text-purple-600'> expecting a true purple will silently get blue. Consider leaving a code-level comment and lint rule, since the mapping is now invisible from the component source.",
+    "Same for yellow/amber -> orange: a 'yellow warning' badge anywhere in the codebase now renders as orange, which could visually collide with action/accent orange. Status badges in SchoolNews.jsx (CAT_COLORS), EnrollmentRequests.jsx, Applications.jsx, Bookings.jsx should be audited to make sure 'warning' and 'success' states remain visually distinguishable (user explicitly asked to keep discrete green/red for status badges — verify green classes aren't being swallowed by the remap).",
+    "grayScale 300/400/500 all collapse to #7b849c (TEXT_MUTED). Any legacy border-gray-300 is now the same color as text-gray-500 (muted text), which may remove visible separators from older cards. The askool-card component uses --askool-blue-pale (good), but ad-hoc border-gray-200/300 across the codebase should be grep'd and migrated.",
+    "LearnerProfile.jsx (142 LOC, dense) renders fine but mixes 2 sub-components (ActionCard, Act) inline and declares ActionCard between imports — unusual, triggers linter warnings and makes diffs noisy. Split into /components/learner/*.",
+    "LearnerProfile edit: on save, api.put('/users/me/profile', {... city: f.location || user?.city}) overwrites user.city with the selected 'location' region even when the user had a more specific city — potential data loss. Consider keeping city and location as distinct fields.",
+    "index.css @media (prefers-reduced-motion) sets transition-duration: 0.001ms !important globally; this breaks the dialog/popover open/close animations Radix relies on for state transitions in some edge cases. OK for a11y but verify Radix portals still unmount cleanly."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (not tested per request)", "frontend": "100% — all 4 role dashboards, 10 public routes, learner CRUD, mobile layout verified"},
+  "test_credentials": "See /app/memory/test_credentials.md",
+  "seed_data_creation": "Learner apprenant@askool.sn: field='Informatique', objectives='TEST_regression_1790987112'. Non-destructive; main agent can leave as-is or clear.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Visual redesign tokens are centralized in /app/frontend/tailwind.config.js (grayScale/blueScale/orangeScale remap) and /app/frontend/src/index.css. Sidebar=#16295e, surface=#f4f6fc, focus outline=#203c89, orange accent on active sidebar item = #ee731f. ADULT_LEARNER dashboard entrypoint is /dashboard (LearnerProfile.jsx). Save endpoint is PUT /api/users/me/profile (not /me/learner). All 4 roles (SCHOOL/EDUCATOR/PARENT/ADULT_LEARNER) verified side-nav loads every route without blank pages. Minor pre-existing: cvtheque empty-src warning; sporadic 404s on educator /profil and parent /reservations sub-fetches.",
+  "rca of the issue": "No regression bugs found. 404 noise on educator/profil and parent/reservations appears to be legacy data-fetch endpoints that return 404 for users with no related records; the UI handles them gracefully (page renders)."
+}
