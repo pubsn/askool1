@@ -1,0 +1,71 @@
+{
+  "summary": "Iteration 12 — Full-stack testing of three new features: scheduled school posts (with cron), WhatsApp/link share, and ADULT_LEARNER learning path. 12/12 backend pytest cases PASS. End-to-end UI flows verified across SCHOOL / ADULT_LEARNER / PARENT roles. No critical or minor bugs found.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_results": {
+    "backend_pytest": {
+      "file": "/app/backend/tests/test_news_scheduling_and_learning.py",
+      "report": "/app/test_reports/pytest/news_scheduling.xml",
+      "passed": 12, "failed": 0,
+      "cases": [
+        "TestScheduledPost.test_create_scheduled_post (status=scheduled, notified=0)",
+        "TestScheduledPost.test_scheduled_in_stats (stats.scheduled >= 1)",
+        "TestScheduledPost.test_scheduled_hidden_from_public_feed (public /schools/{id}/posts + /feed both exclude it)",
+        "TestScheduledPost.test_publish_now (becomes visible in parent /feed)",
+        "TestScheduledPost.test_publish_now_already_published_400",
+        "TestScheduledPost.test_unschedule_flow (status=draft, second call → 400)",
+        "TestScheduledPost.test_immediate_post_notifies (no scheduled_at → status=published)",
+        "TestCron.test_cron_requires_auth (401/403 without secret)",
+        "TestCron.test_cron_runs_with_secret (200/202 with Bearer WEBHOOK_CRON_SECRET)",
+        "TestLearnerPath.test_progress_endpoint",
+        "TestLearnerPath.test_goal_crud (POST→PUT done→GET persists→DELETE)",
+        "TestLearnerPath.test_goal_empty_label_400"
+      ]
+    },
+    "frontend_e2e": {
+      "SCHOOL /dashboard/actualites": {
+        "stats_initial": "Programmées = 0",
+        "create_scheduled": "news-schedule datetime-local filled → publish button label switches to 'Programmer' → toast 'Programmée pour le 3 oct. 2026, 03:47' ✓",
+        "news-upcoming section": "appeared with post + news-scheduled-badge-<id> 'Programmée le …' ✓",
+        "news-published section": "does NOT contain scheduled post ✓",
+        "news-stat-scheduled": "0 → 1 ✓",
+        "news-unschedule-<id>": "post becomes Brouillon (news-draft-badge-<id> visible) ✓",
+        "news-publish-now-<id>": "post moves from À venir to En ligne, publish-now button disappears ✓",
+        "share buttons on own published post": "share-whatsapp-<id> + share-copy-<id> present; href = https://wa.me/?text=<school name> — <title>%0A<url with /ecoles/<slug>#actualites>  ✓"
+      },
+      "ADULT_LEARNER /dashboard": {
+        "learning-path section": "visible on dashboard ✓",
+        "cards": "path-lessons, path-hours, path-goals-count all rendered",
+        "goal_add": "goal-input + goal-add create a new goal ✓",
+        "goal_toggle_percent": "0% → 100% after toggling the only goal ✓",
+        "persistence_after_reload": "goal still present after full reload ✓",
+        "goal_delete": "goal-delete-<id> removes the entry ✓"
+      },
+      "PARENT /dashboard/fil": {
+        "share-whatsapp buttons": 1,
+        "share-copy buttons": 1,
+        "note": "Buttons present on each feed post."
+      }
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_news_scheduling_and_learning.py",
+    "/app/test_reports/pytest/news_scheduling.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend update_post (PUT /schools/me/posts/{id}): the check `if post.get('status','published') == 'published'` prevents rescheduling an already-published post (good), but if a legacy post has no `status` field, it defaults to 'published' and strips scheduled_at — intentional and correct. However the else-branch always forces status to 'scheduled' or 'draft' — a currently-'scheduled' post edited WITHOUT scheduled_at will silently become a Brouillon. The UI prefills scheduled_at via toLocalInput so in practice this is OK, but worth a comment or UI confirmation.",
+    "notify_post_followers iterates followers sequentially inside an async-for. For schools with many followers (hundreds), consider batching notifications via bulk insert into db.notifications (one insert_many) to reduce round-trips.",
+    "SharePost.jsx uses navigator.clipboard.writeText with a bare try/catch — on insecure contexts or browsers without clipboard API it falls back to toast.error('Copie impossible'). Consider a document.execCommand('copy') fallback for broader compatibility.",
+    "publish_scheduled_posts (cron handler) does the publish+notify loop sequentially per post. If many posts are due at once the request could exceed cron timeout. Consider processing in parallel with asyncio.gather or capping per-call to a configurable batch size (already limited to 200 by to_list).",
+    "SchoolNews.jsx is now ~127 lines, dense inline PostRow component — fine as-is but splitting PostRow into its own file would reduce diff-noise in future iterations."
+  ],
+  "updated_files": ["/app/backend/tests/test_news_scheduling_and_learning.py"],
+  "success_rate": {"backend": "100% (12/12 pytest)", "frontend": "100% (all E2E flows PASS)"},
+  "test_credentials": "Standard /app/memory/test_credentials.md — password Askool2026!",
+  "seed_data_creation": "Test posts created with prefix 'TEST_UI_sched_' and 'TEST_now_' were deleted at end of flows. One pre-existing TEST_sched_* post from an earlier curl run is visible in the parent feed (school: Test School). Non-blocking; can be purged manually if desired.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All three features in iteration 12 are fully functional end-to-end. Login route is /connexion (NOT /login). Scheduled posts: new PostBody.scheduled_at (ISO) + status in ('scheduled','draft','published'); PUBLISHED_Q filter excludes scheduled from /schools/{id}/posts and /feed. publish-now and unschedule endpoints at POST /schools/me/posts/{id}/{publish-now,unschedule}. Cron: POST /api/cron/publish-scheduled-posts, Bearer WEBHOOK_CRON_SECRET. Learner goals persist at users.learner_profile.goals_list. SharePost component wraps WhatsApp (wa.me link with text=`<school> — <title>\\n<url>`) + copy-link using navigator.clipboard.",
+  "rca of the issue": "No bugs — nothing to RCA."
+}

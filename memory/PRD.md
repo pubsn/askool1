@@ -125,6 +125,12 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - `SecureFile.jsx` : fallback « Document indisponible » au lieu d'un squelette de chargement infini
 - `CVtheque.jsx` : avatar de secours aux couleurs ASKOOL au lieu d'un `img src=""` (warning React supprimé)
 
+## Implemented (2026-06 — Publication programmée, Partage, Parcours d'apprentissage) — vérifié iteration_12 (12/12 pytest + E2E)
+- **Publication programmée** : `school_posts.scheduled_at` + `status` (`published` / `scheduled` / `draft`) ; `POST /schools/me/posts` avec `scheduled_at` futur → `scheduled` sans notification ; `POST /schools/me/posts/{id}/publish-now` (publie + notifie), `POST /schools/me/posts/{id}/unschedule` (→ brouillon) ; `GET /schools/{id}/posts`, `GET /feed` et `parent/overview` filtrés par `PUBLISHED_Q` (les docs legacy sans `status` restent publiés) ; stat `scheduled` ; cron `POST /api/cron/publish-scheduled-posts` toutes les 5 min (`.emergent/crons.yml`) → publie les dues et notifie les abonnés
+- Frontend `SchoolNews.jsx` : champ « Publier plus tard » (datetime-local), bouton qui devient « Programmer », section « À venir » visible de l'école seule (badges « Programmée le … » / « Brouillon »), actions « Publier maintenant » et « Annuler la programmation », StatCard « Programmées »
+- **Partage d'une actualité** : `SharePost.jsx` (WhatsApp via wa.me + copie du lien `/ecoles/{slug}#actualites`) intégré dans `PostReactions` → présent sur le fil, le profil public d'école et « Mes publications »
+- **Parcours d'apprentissage** : `GET /learner/progress` (cours terminés, heures, matières, objectifs, % de progression, prochain cours) + CRUD objectifs `POST/PUT/DELETE /learner/goals` (stockés dans `users.learner_profile.goals_list`) ; composant `LearningPath.jsx` sur le dashboard apprenant (barre de progression, 3 cartes, objectifs cochables, prochain cours)
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium
