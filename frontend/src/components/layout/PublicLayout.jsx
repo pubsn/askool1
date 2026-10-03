@@ -35,14 +35,14 @@ export default function PublicLayout({ children }) {
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-screen flex-col bg-askool-cream">
-      <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Logo />
-          <nav className="hidden items-center gap-6 xl:flex">
+    <div className="flex min-h-screen flex-col bg-askool-surface">
+      <header className="sticky top-0 z-40 border-b border-askool-border bg-white">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="shrink-0"><Logo /></div>
+          <nav className="hidden items-center gap-5 xl:flex">
             {NAV.map((n) => (
               <Link key={n.to} to={n.to} data-testid={`nav-${n.to}`}
-                className={`text-sm font-medium transition-colors hover:text-askool-blue ${location.pathname === n.to ? "text-askool-blue" : "text-gray-600"}`}>
+                className={`text-sm font-medium transition-colors duration-200 hover:text-askool-blue ${location.pathname === n.to ? "text-askool-blue" : "text-askool-text"}`}>
                 {n.label}
               </Link>
             ))}

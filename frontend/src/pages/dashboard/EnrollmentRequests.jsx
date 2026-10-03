@@ -9,7 +9,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
 const STATUSES = ["Envoyée", "Consultée", "En cours", "Acceptée", "Refusée"];
-const COLORS = { "Envoyée": "bg-gray-100 text-gray-700", "Consultée": "bg-blue-100 text-blue-700", "En cours": "bg-amber-100 text-amber-700", "Acceptée": "bg-emerald-100 text-emerald-700", "Refusée": "bg-red-100 text-red-700" };
+const COLORS = { "Envoyée": "bg-askool-bluepale text-askool-text", "Consultée": "bg-askool-bluelight text-askool-blue", "En cours": "bg-askool-orangelight text-askool-orangehover", "Acceptée": "bg-emerald-50 text-emerald-700", "Refusée": "bg-red-50 text-red-700" };
 
 export default function EnrollmentRequests() {
   const { user } = useAuth();

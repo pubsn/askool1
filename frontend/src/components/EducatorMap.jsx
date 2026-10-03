@@ -20,13 +20,13 @@ function hashJitter(id) {
 
 const blueIcon = L.divIcon({
   className: "",
-  html: '<div style="background:#2a4898;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
+  html: '<div style="background:#203c89;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>',
   iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -28],
 });
 
 const centerIcon = L.divIcon({
   className: "",
-  html: '<div style="background:#e9483e;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(233,72,62,.35)"></div>',
+  html: '<div style="background:#ee731f;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(233,72,62,.35)"></div>',
   iconSize: [20, 20], iconAnchor: [10, 10],
 });
 
@@ -57,7 +57,7 @@ export default function EducatorMap({ educators, center = null, radius = null, o
         {onPick && <ClickPicker onPick={onPick} />}
         {center && radius && (
           <>
-            <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#e9483e", fillColor: "#e9483e", fillOpacity: 0.12 }} />
+            <Circle center={center} radius={radius * 1000} pathOptions={{ color: "#ee731f", fillColor: "#ee731f", fillOpacity: 0.12 }} />
             <Marker position={center} icon={centerIcon} />
           </>
         )}
@@ -69,13 +69,13 @@ export default function EducatorMap({ educators, center = null, radius = null, o
                   <img src={e.photo || e.avatar_url} alt={e.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "cover" }} />
                   <div>
                     <div style={{ fontWeight: 600 }}>{e.name}</div>
-                    <div style={{ fontSize: 12, color: "#2a4898" }}>{e.profession}</div>
+                    <div style={{ fontSize: 12, color: "#203c89" }}>{e.profession}</div>
                   </div>
                 </div>
                 <div className="mt-1 flex items-center gap-1"><Stars value={e.rating} size={12} /><span style={{ fontSize: 11 }}>({e.reviews_count || 0})</span></div>
                 <div style={{ fontSize: 13, margin: "4px 0" }}>{(e.hourly_rate || 0).toLocaleString()} FCFA/h · {e.location}{e.distance_km != null ? ` · ${e.distance_km} km` : ""}</div>
                 <button data-testid={`map-view-${e.user_id}`} onClick={() => navigate(`/educateurs/${e.user_id}`)}
-                  style={{ background: "#2a4898", color: "#fff", border: 0, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", width: "100%" }}>
+                  style={{ background: "#203c89", color: "#fff", border: 0, borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer", width: "100%" }}>
                   Voir le profil
                 </button>
               </div>

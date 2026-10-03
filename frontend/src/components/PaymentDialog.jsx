@@ -8,8 +8,8 @@ import { Loader2, ShieldCheck } from "lucide-react";
 import api from "@/lib/api";
 
 const PROVIDERS = [
-  { id: "orange_money", label: "Orange Money", accent: "#ff6600", initials: "OM" },
-  { id: "wave", label: "Wave", accent: "#1dc4ff", initials: "W" },
+  { id: "orange_money", label: "Orange Money", accent: "#ee731f", initials: "OM" },
+  { id: "wave", label: "Wave", accent: "#203c89", initials: "W" },
 ];
 
 // payload: { purpose: "subscription"|"booking", plan?, audience?, booking_id? }
@@ -70,7 +70,7 @@ export const PaymentDialog = ({ open, onOpenChange, payload, amountLabel, onSucc
                   key={p.id}
                   data-testid={`pay-provider-${p.id}`}
                   onClick={() => setProvider(p.id)}
-                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-5 transition ${provider === p.id ? "border-askool-orange bg-orange-50" : "border-gray-100 hover:border-gray-200"}`}
+                  className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-5 transition ${provider === p.id ? "border-askool-orange bg-askool-orangelight" : "border-askool-border hover:border-askool-blue"}`}
                 >
                   <span className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white" style={{ backgroundColor: p.accent }}>{p.initials}</span>
                   <span className="text-sm font-semibold text-gray-800">{p.label}</span>

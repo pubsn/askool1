@@ -1,49 +1,79 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --askool-blue: #2a4898;
-  --askool-blue-hover: #203a7a;
-  --askool-orange: #e9483e;
-  --askool-orange-hover: #d13a30;
+  /* ASKOOL design tokens */
+  --askool-blue: #203c89;
+  --askool-blue-dark: #16295e;
+  --askool-blue-light: #eef2fc;
+  --askool-blue-pale: #dde4f4;
+  --askool-surface: #f4f6fc;
+  --askool-orange: #ee731f;
+  --askool-orange-dark: #d45f11;
+  --askool-orange-light: #fdefe3;
+  --askool-white: #ffffff;
+  --askool-ink: #000000;
+  --askool-text: #4d5670;
+  --askool-subtle: #7b849c;
+
+  --askool-blue-hover: var(--askool-blue-dark);
+  --askool-orange-hover: var(--askool-orange-dark);
+
+  --askool-font-display: 'Poppins', system-ui, sans-serif;
+  --askool-font-sans: 'Inter', system-ui, sans-serif;
+
+  --askool-radius-sm: 0.5rem;
+  --askool-radius-md: 0.75rem;
+  --askool-radius-lg: 1rem;
+  --askool-radius-xl: 1.25rem;
+
+  --askool-shadow-card: 0 1px 2px rgba(22, 41, 94, 0.04), 0 4px 16px rgba(22, 41, 94, 0.06);
+  --askool-shadow-card-hover: 0 4px 8px rgba(22, 41, 94, 0.06), 0 12px 28px rgba(22, 41, 94, 0.10);
 }
 
 body {
   margin: 0;
-  font-family: 'Figtree', system-ui, sans-serif;
+  font-family: var(--askool-font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #FDFBF7;
-  color: #111827;
+  background-color: var(--askool-surface);
+  color: var(--askool-text);
 }
 
 h1, h2, h3, h4, h5, h6, .font-display {
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--askool-font-display);
+  color: var(--askool-ink);
+}
+
+label, .label {
+  font-size: 0.875rem;
 }
 
 @layer base {
   :root {
-    --background: 40 36% 98%;
-    --foreground: 222 47% 11%;
+    --background: 225 60% 97%;
+    --foreground: 0 0% 0%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 0 0% 0%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 224 56% 38%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 224 62% 33%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 33% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 45 94% 51%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 224 56% 38%;
+    --secondary: 223 70% 96%;
+    --secondary-foreground: 224 62% 33%;
+    --muted: 223 70% 96%;
+    --muted-foreground: 225 19% 37%;
+    --accent: 24 86% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 222 51% 91%;
+    --input: 222 51% 91%;
+    --ring: 224 62% 33%;
     --radius: 0.75rem;
   }
 }
@@ -51,6 +81,30 @@ h1, h2, h3, h4, h5, h6, .font-display {
 @layer base {
   * { @apply border-border; }
   body { @apply bg-background text-foreground; }
+
+  /* Accessible, consistent focus state across the app */
+  :focus-visible {
+    outline: 2px solid var(--askool-blue);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  [disabled], .disabled, button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .askool-card {
+    background: var(--askool-white);
+    border: 1px solid var(--askool-blue-pale);
+    border-radius: var(--askool-radius-xl);
+    box-shadow: var(--askool-shadow-card);
+  }
+  .askool-icon-chip {
+    background: var(--askool-blue-light);
+    color: var(--askool-blue);
+  }
 }
 
 .animate-fade-in { animation: fadeIn 0.5s ease-out both; }
@@ -59,4 +113,13 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .hide-scrollbar::-webkit-scrollbar { display: none; }
 .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-::selection { background: #e9483e; color: #fff; }
+::selection { background: var(--askool-blue); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

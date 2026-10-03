@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
-const pin = L.divIcon({ className: "", html: '<div style="background:#2a4898;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [28, 28], iconAnchor: [14, 28] });
+const pin = L.divIcon({ className: "", html: '<div style="background:#203c89;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>', iconSize: [28, 28], iconAnchor: [14, 28] });
 
 function Section({ id, icon: Icon, title, children, testId }) {
   return (

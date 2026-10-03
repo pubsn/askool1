@@ -11,7 +11,7 @@ import api, { API_ROOT } from "@/lib/api";
 import PostReactions from "@/components/PostReactions";
 import { useAuth } from "@/context/AuthContext";
 
-export const CAT_COLORS = { "Actualité": "bg-askool-bluelight text-askool-blue", "Événement": "bg-emerald-50 text-emerald-700", "Inscription": "bg-emerald-100 text-emerald-800", "Vie scolaire": "bg-sky-50 text-sky-700", "Résultats": "bg-violet-50 text-violet-700", "Information aux parents": "bg-amber-50 text-amber-700", "Activité": "bg-teal-50 text-teal-700", "Besoin de recrutement": "bg-askool-orangelight text-askool-orangehover", "Annonce": "bg-gray-100 text-gray-700" };
+export const CAT_COLORS = { "Actualité": "bg-askool-bluelight text-askool-blue", "Événement": "bg-askool-bluelight text-askool-bluedark", "Inscription": "bg-askool-bluepale text-askool-bluedark", "Vie scolaire": "bg-askool-bluelight text-askool-blue", "Résultats": "bg-askool-bluepale text-askool-blue", "Information aux parents": "bg-askool-orangelight text-askool-orangehover", "Activité": "bg-askool-bluelight text-askool-bluedark", "Besoin de recrutement": "bg-askool-orangelight text-askool-orangehover", "Annonce": "bg-askool-bluepale text-askool-text" };
 const EMPTY = { title: "", content: "", category: "Actualité", images: [], video_url: "" };
 
 export default function SchoolNews() {
@@ -45,7 +45,7 @@ export default function SchoolNews() {
         <StatCard icon={BarChart3} label="Interactions" value={stats.interactions || 0} testId="news-stat-interactions" />
       </div>
       <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm" data-testid="news-form">
-        {editing && <div className="mb-3 flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800"><span>Modification d'une publication</span><button onClick={() => { setEditing(null); setF(EMPTY); }} className="underline">Annuler</button></div>}
+        {editing && <div className="mb-3 flex items-center justify-between rounded-lg bg-askool-orangelight px-3 py-2 text-sm text-askool-orangehover"><span>Modification d'une publication</span><button onClick={() => { setEditing(null); setF(EMPTY); }} className="underline">Annuler</button></div>}
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="sm:col-span-2"><Label>Titre</Label><Input data-testid="news-title" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} className="mt-1 rounded-lg" placeholder="Ouverture des inscriptions 2027-2028" /></div>
           <div><Label>Catégorie</Label><select data-testid="news-category" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm">{cats.map((c) => <option key={c}>{c}</option>)}</select></div>

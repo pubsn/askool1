@@ -90,22 +90,23 @@ export default function DashboardLayout() {
   const isActive = (to) => (to === "/dashboard" ? location.pathname === to : location.pathname.startsWith(to));
 
   return (
-    <div className="min-h-screen bg-askool-cream">
+    <div className="min-h-screen bg-askool-surface">
       {/* Sidebar desktop */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-gray-100 bg-white lg:flex">
-        <div className="flex h-16 items-center px-6"><Logo /></div>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-askool-bluedark lg:flex">
+        <div className="flex h-16 items-center px-6"><Logo light /></div>
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 hide-scrollbar">
           {menu.map((m) => (
             <Link key={m.to} to={m.to} data-testid={`side-nav-${m.to}`}
-              className={cn("flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                isActive(m.to) ? "bg-askool-blue text-white" : "text-gray-600 hover:bg-askool-bluelight")}>
-              <m.icon size={18} /> {m.label}
+              className={cn("group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors duration-200",
+                isActive(m.to) ? "bg-white/10 text-white" : "text-white/70 hover:bg-white/[0.06] hover:text-white")}>
+              {isActive(m.to) && <span aria-hidden className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-askool-orange" />}
+              <m.icon size={18} className={isActive(m.to) ? "text-askool-orange" : "text-white/60 group-hover:text-white"} /> {m.label}
             </Link>
           ))}
         </nav>
-        <div className="border-t border-gray-100 p-3">
+        <div className="border-t border-white/10 p-3">
           <button data-testid="logout-btn" onClick={() => { logout(); navigate("/"); }}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600">
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
             <LogOut size={18} /> Déconnexion
           </button>
         </div>
@@ -113,14 +114,14 @@ export default function DashboardLayout() {
 
       {/* Main */}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-gray-100 bg-white/85 px-4 backdrop-blur-md sm:px-6">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-askool-border bg-white px-4 sm:px-6">
           <div className="flex items-center gap-3 lg:hidden"><Logo /></div>
-          <div className="hidden text-sm text-muted-foreground lg:block">Bonjour, <span className="font-semibold text-gray-900">{user?.name}</span></div>
+          <div className="hidden text-sm text-askool-text lg:block">Bonjour, <span className="font-semibold text-askool-ink">{user?.name}</span></div>
           <div className="flex items-center gap-3">
-            <Link to="/" data-testid="back-home" className="hidden text-sm text-gray-500 hover:text-askool-blue sm:flex sm:items-center sm:gap-1"><Home size={16} /> Accueil</Link>
-            <Link to="/dashboard/notifications" data-testid="notif-bell" className="relative rounded-full p-2 hover:bg-gray-100">
-              <Bell size={20} className="text-gray-600" />
-              {unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-askool-orange px-1 text-[10px] font-bold text-black">{unread}</span>}
+            <Link to="/" data-testid="back-home" className="hidden text-sm text-askool-subtle transition-colors hover:text-askool-blue sm:flex sm:items-center sm:gap-1"><Home size={16} /> Accueil</Link>
+            <Link to="/dashboard/notifications" data-testid="notif-bell" className="relative rounded-full p-2 text-askool-blue transition-colors hover:bg-askool-bluelight">
+              <Bell size={20} />
+              {unread > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-askool-orange px-1 text-[10px] font-bold text-white">{unread}</span>}
             </Link>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-askool-blue text-sm font-semibold text-white">
               {(user?.name || "U").charAt(0).toUpperCase()}
@@ -133,11 +134,11 @@ export default function DashboardLayout() {
       </div>
 
       {/* Bottom nav mobile */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-gray-100 bg-white py-2 lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-30 flex items-center justify-around border-t border-askool-border bg-white py-2 lg:hidden">
         {menu.slice(0, 5).map((m) => (
           <Link key={m.to} to={m.to} data-testid={`bottom-nav-${m.to}`}
-            className={cn("flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium",
-              isActive(m.to) ? "text-askool-blue" : "text-gray-500")}>
+            className={cn("flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-[10px] font-medium transition-colors",
+              isActive(m.to) ? "text-askool-blue" : "text-askool-subtle hover:text-askool-blue")}>
             <m.icon size={20} /> {m.label.split(" ")[0]}
           </Link>
         ))}
