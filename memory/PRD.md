@@ -131,6 +131,17 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - **Partage d'une actualité** : `SharePost.jsx` (WhatsApp via wa.me + copie du lien `/ecoles/{slug}#actualites`) intégré dans `PostReactions` → présent sur le fil, le profil public d'école et « Mes publications »
 - **Parcours d'apprentissage** : `GET /learner/progress` (cours terminés, heures, matières, objectifs, % de progression, prochain cours) + CRUD objectifs `POST/PUT/DELETE /learner/goals` (stockés dans `users.learner_profile.goals_list`) ; composant `LearningPath.jsx` sur le dashboard apprenant (barre de progression, 3 cartes, objectifs cochables, prochain cours)
 
+## Implemented (2026-06 — Refonte homepage & inscription, inspiration UX alexia.fr) — vérifié iteration_13 (100 % frontend)
+- **Header public refondu** (`PublicLayout.jsx`) : navigation primaire épurée (Accueil, Explorer, Comment ça marche) + panneau « Menu » desktop et drawer mobile regroupant les 9 entrées secondaires (Écoles, Éducateurs, Offres d'emploi, Cours particuliers, Formations, Actualités, Conseils, À propos, Aide/Contact) + Connexion / Créer un compte ; footer réorganisé
+- **Homepage** (`Landing.jsx`) structurée RECHERCHE → CATÉGORIES → PROFILS → PARCOURS → DONNÉES RÉELLES → CONFIANCE → RESSOURCES → CTA :
+  - `home/HomeSearch.jsx` : recherche universelle « Que recherchez-vous ? » (5 types : École, Éducateur, Offre d'emploi, Cours, Formation) + mot-clé/matière/niveau/localisation (via `/meta`) + 4 accès rapides ; route vers `/ecoles`, `/educateurs`, `/emplois` avec les bons paramètres (`service_type=Cours particuliers`, `type=formation`)
+  - `home/ExploreSection.jsx` (5 catégories), `home/AudienceSection.jsx` (4 profils + CTA Commencer → `/inscription?role=`), `home/HowItWorksSection.jsx` (3 étapes), `home/TrustSection.jsx` (compteurs **réels** issus des totaux API + garanties qualitatives, aucun chiffre inventé), `home/ResourcesSection.jsx` (guides internes réels — aucune API blog n'existe), `home/FinalCta.jsx`
+  - Blocs de données réelles : éducateurs (`/educators`), offres (`/jobs`), établissements (`/schools`) avec « Voir tout » ; ancrage `#explorer` / `#actualites`
+- **Cartes enrichies** : `EducatorCard` affiche niveaux + années d'expérience ; `JobCard` affiche la date de publication
+- **Inscription en assistant 3 étapes** (`auth/Register.jsx`) : « Quel est votre profil ? » → identité → mot de passe, barre de progression, « Étape X sur 3 », précédent/suivant, récapitulatif, validation ; `/inscription?role=X` démarre à l'étape 2 ; appel backend `register({name,email,password,role})` **inchangé**, Google Auth conservé
+- Correctif CSS : la couleur des titres passe dans `@layer base` pour ne plus écraser les utilitaires Tailwind (textes blancs sur fonds foncés)
+- Aucune modification backend / API / DB / auth / routes dans cette itération
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium

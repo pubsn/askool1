@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only validation of the new ASKOOL homepage, refonte header/footer, and 3-step registration wizard. All 10 homepage sections render with correct data-testids and real backend data (10 educators, 4 schools, 8 jobs). Hero universal search works for all 5 kinds (school/educator/job/course/formation) and correctly builds URL params (q, service_type=Cours particuliers, type=formation). The 4 quick-access buttons route correctly. Primary + secondary header menu (9 entries) opens via nav-menu-toggle and all menu-* testids are present and navigate. Hash anchors (#explorer, #actualites) scroll correctly. See-all-* CTAs navigate to /educateurs, /emplois, /ecoles. TrustSection displays real counters matching API totals and all text has proper white-on-dark contrast. ResourcesSection points to real guide pages (expected, no blog API). FinalCta works. Register wizard: step1 role grid -> step2 identity (register-next disabled until valid name+email) -> step3 recap+password; register-back preserves fields; progress bar shows 'Étape X sur 3'. Direct access /inscription?role=EDUCATOR starts at step 2 with google-auth-btn visible. Real EDUCATOR account creation succeeded (qa.home.1791364411@askool.sn / Azerty123!), redirected to /dashboard, cookies set (access_token/refresh_token), /api/auth/me returns role=EDUCATOR. Login regression OK (parent@askool.sn). All public pages (/educateurs, /ecoles, /emplois, /comment-ca-marche, /tarifs, /a-propos, /faq, /contact, /pour-les-ecoles) load with new header. Mobile 390x844: home-search visible on first screen, no horizontal overflow, mobile-menu-btn opens mobile-nav-panel with primary + 9 secondary entries + Connexion/Créer un compte CTAs. No console errors beyond expected 401 on /auth/me when unauthenticated.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Clean up seeded test account qa.home.1791364411@askool.sn (EDUCATOR) created during this test run."
+  ],
+  "critical_code_review_comments": [
+    "Landing.jsx conditionally renders home-educators/home-jobs/home-schools sections only when results length > 0. If the backend ever returns empty arrays, the testids disappear — acceptable but worth noting for QA stability.",
+    "HomeSearch defaults KINDS fallback to KINDS[1] (educator) if an unknown kind is passed to go(); harmless but a small foot-gun.",
+    "In PublicLayout the mobile-nav-panel 'Connexion' and 'Créer un compte' CTAs do not have data-testid; low priority since header-login-btn/header-register-btn exist in desktop."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "n/a", "frontend": "100%" },
+  "test_credentials": "Login regression used parent@askool.sn / Askool2026!. New EDUCATOR account created: qa.home.1791364411@askool.sn / Azerty123! (should be cleaned up by main agent).",
+  "seed_data_creation": "Created one real EDUCATOR account via wizard: qa.home.1791364411@askool.sn (user_id=user_0f4e3dfae2a84bae).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Homepage refonte + 3-step register wizard are fully validated. If testing again, reuse the already-tested testids list. Remember Landing hides educator/job/school blocks if API returns empty — ensure seed is loaded. The ResourcesSection intentionally links to internal guide pages, not blog articles."
+}
