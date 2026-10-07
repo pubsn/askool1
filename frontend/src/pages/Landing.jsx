@@ -1,147 +1,137 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ShieldCheck, Search, Briefcase, Users, GraduationCap, Star, ArrowRight, CheckCircle2, School, UserSearch } from "lucide-react";
+import { ShieldCheck, ArrowRight } from "lucide-react";
 import PublicLayout from "@/components/layout/PublicLayout";
-import SearchBar from "@/components/SearchBar";
+import HomeSearch from "@/components/home/HomeSearch";
+import ExploreSection from "@/components/home/ExploreSection";
+import AudienceSection from "@/components/home/AudienceSection";
+import HowItWorksSection from "@/components/home/HowItWorksSection";
+import TrustSection from "@/components/home/TrustSection";
+import ResourcesSection from "@/components/home/ResourcesSection";
+import FinalCta from "@/components/home/FinalCta";
 import EducatorCard from "@/components/EducatorCard";
+import JobCard from "@/components/JobCard";
+import SchoolCard from "@/components/SchoolCard";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 
-const JOURNEYS = [
-  { key: "schools", title: "Pour les écoles", icon: School, iconClass: "bg-askool-bluelight text-askool-blue",
-    steps: ["Créez votre compte", "Publiez votre offre", "Trouvez les candidats", "Recrutez"] },
-  { key: "parents", title: "Pour les parents / apprenants", icon: Users, iconClass: "bg-askool-orangelight text-askool-orangehover",
-    steps: ["Recherchez", "Comparez", "Contactez", "Réservez"] },
-  { key: "educators", title: "Pour les éducateurs", icon: GraduationCap, iconClass: "bg-emerald-50 text-emerald-600",
-    steps: ["Créez votre profil", "Valorisez vos compétences", "Postulez ou recevez des demandes", "Développez votre activité"] },
-];
+const SectionHead = ({ eyebrow, title, subtitle, action }) => (
+  <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="max-w-2xl">
+      <span className="text-label-base font-semibold uppercase tracking-widest text-askool-blue">{eyebrow}</span>
+      <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-askool-ink sm:text-4xl">{title}</h2>
+      {subtitle && <p className="mt-3 text-askool-text">{subtitle}</p>}
+    </div>
+    {action}
+  </div>
+);
 
 export default function Landing() {
   const navigate = useNavigate();
   const [educators, setEducators] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [schools, setSchools] = useState([]);
+  const [counts, setCounts] = useState({});
 
   useEffect(() => {
-    api.get("/educators?sort=relevance&page_size=3").then(({ data }) => setEducators(data.results)).catch(() => {});
+    api.get("/educators?sort=relevance&page_size=3").then(({ data }) => { setEducators(data.results); setCounts((c) => ({ ...c, educators: data.total })); }).catch(() => {});
+    api.get("/jobs?page_size=3").then(({ data }) => { setJobs(data.results); setCounts((c) => ({ ...c, jobs: data.total })); }).catch(() => {});
+    api.get("/schools?page_size=3").then(({ data }) => { setSchools(data.results); setCounts((c) => ({ ...c, schools: data.total })); }).catch(() => {});
   }, []);
+
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    const el = document.getElementById(hash.slice(1));
+    if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 150);
+  }, [hash]);
+
+  const SeeAll = ({ label, to, testId }) => (
+    <Button data-testid={testId} variant="outline" onClick={() => navigate(to)}
+      className="w-fit rounded-xl border-askool-blue text-askool-blue hover:bg-askool-bluelight">
+      {label} <ArrowRight size={15} />
+    </Button>
+  );
 
   return (
     <PublicLayout>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-askool-orange/10 blur-3xl" />
-        <div className="absolute -left-32 top-40 h-96 w-96 rounded-full bg-askool-blue/10 blur-3xl" />
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-2 lg:gap-8 lg:px-8 lg:pt-20">
-          <div className="flex flex-col justify-center">
+      {/* 2. HERO + recherche */}
+      <section className="border-b border-askool-border bg-white">
+        <div className="mx-auto max-w-7xl px-4 pb-12 pt-12 sm:px-6 lg:px-8 lg:pb-16 lg:pt-20">
+          <div className="max-w-3xl">
             <span className="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-askool-bluelight px-3 py-1 text-sm font-medium text-askool-blue">
-              <ShieldCheck size={15} /> Talents éducatifs vérifiés · Sénégal
+              <ShieldCheck size={15} /> Plateforme éducative · Sénégal
             </span>
-            <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-              className="font-display text-4xl font-extrabold leading-tight tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">
-              Trouvez le bon éducateur. <span className="text-askool-blue">Trouvez la bonne opportunité.</span>
+            <motion.h1 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}
+              className="font-display text-4xl font-bold leading-[1.1] tracking-tight text-askool-ink sm:text-5xl lg:text-6xl">
+              Trouvez ce qu'il vous faut pour <span className="text-askool-blue">votre projet éducatif.</span>
             </motion.h1>
-            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              ASKOOL connecte les établissements, les enseignants, les tuteurs et les apprenants sur une seule plateforme.
+            <p className="mt-5 max-w-2xl text-base text-askool-text sm:text-lg">
+              École, éducateur, emploi, cours particuliers ou formation : trouvez rapidement ce dont vous avez besoin sur ASKOOL.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Button data-testid="hero-find-educator" onClick={() => navigate("/educateurs")}
-                className="rounded-xl bg-askool-blue px-6 py-6 text-base text-white hover:bg-askool-bluehover">
-                <UserSearch size={18} /> Trouver un éducateur
-              </Button>
-              <Button data-testid="hero-find-job" onClick={() => navigate("/emplois")}
-                variant="outline" className="rounded-xl border-2 border-askool-blue px-6 py-6 text-base text-askool-blue hover:bg-askool-bluelight">
-                <Briefcase size={18} /> Trouver un emploi
-              </Button>
+          </div>
+          <div className="mt-8"><HomeSearch /></div>
+        </div>
+      </section>
+
+      {/* 3. EXPLORER */}
+      <ExploreSection />
+
+      {/* 4. VOUS ÊTES */}
+      <AudienceSection />
+
+      {/* 5. COMMENT ÇA MARCHE */}
+      <HowItWorksSection />
+
+      {/* 6. ÉDUCATEURS */}
+      {educators.length > 0 && (
+        <section data-testid="home-educators" className="bg-white py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SectionHead eyebrow="Éducateurs" title="Des éducateurs près de chez vous"
+              subtitle="Enseignants, tuteurs et formateurs présents sur la plateforme."
+              action={<SeeAll label="Voir tous les éducateurs" to="/educateurs" testId="see-all-educators" />} />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {educators.map((e) => <EducatorCard key={e.user_id} edu={e} />)}
             </div>
-            <div className="mt-6 flex items-center gap-6 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-500" /> Profils vérifiés</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 size={16} className="text-emerald-500" /> Avis authentiques</span>
+          </div>
+        </section>
+      )}
+
+      {/* 7. OFFRES D'EMPLOI */}
+      {jobs.length > 0 && (
+        <section data-testid="home-jobs" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <SectionHead eyebrow="Opportunités" title="Dernières offres d'emploi"
+            subtitle="Les postes publiés par les établissements sur ASKOOL."
+            action={<SeeAll label="Voir toutes les offres" to="/emplois" testId="see-all-jobs" />} />
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {jobs.map((j) => <JobCard key={j.offer_id} job={j} />)}
+          </div>
+        </section>
+      )}
+
+      {/* 8. ÉTABLISSEMENTS */}
+      {schools.length > 0 && (
+        <section data-testid="home-schools" className="bg-white py-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <SectionHead eyebrow="Établissements" title="Écoles et établissements référencés"
+              subtitle="Consultez leur fiche complète : niveaux, langues, infos pratiques et actualités."
+              action={<SeeAll label="Voir toutes les écoles" to="/ecoles" testId="see-all-schools" />} />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {schools.map((s) => <SchoolCard key={s.school_id} school={s} />)}
             </div>
           </div>
-          <div className="relative flex items-center">
-            <img src="https://images.unsplash.com/photo-1567057419565-4349c49d8a04?crop=entropy&cs=srgb&fm=jpg&q=85&w=800"
-              alt="Élèves sénégalais souriants" className="h-full max-h-[440px] w-full rounded-3xl object-cover shadow-xl" />
-          </div>
-        </div>
-        <div className="mx-auto -mt-6 max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
-          <SearchBar />
-        </div>
-      </section>
+        </section>
+      )}
 
-      {/* Categories / value */}
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-5 md:grid-cols-3">
-          {[
-            { icon: School, t: "Établissements", d: "Publiez vos offres et recrutez des profils qualifiés rapidement.", to: "/pour-les-ecoles" },
-            { icon: Users, t: "Parents & apprenants", d: "Trouvez le tuteur idéal par matière, niveau et localisation.", to: "/educateurs" },
-            { icon: GraduationCap, t: "Éducateurs", d: "Un profil unique pour enseigner, tutorer et postuler.", to: "/inscription" },
-          ].map((c) => (
-            <button key={c.t} data-testid={`category-${c.t}`} onClick={() => navigate(c.to)}
-              className="group flex flex-col items-start rounded-2xl border border-gray-100 bg-white p-7 text-left shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
-              <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-askool-bluelight text-askool-blue"><c.icon size={24} /></span>
-              <h3 className="font-display text-xl font-semibold text-gray-900">{c.t}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{c.d}</p>
-              <span className="mt-4 flex items-center gap-1 text-sm font-medium text-askool-blue">Découvrir <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" /></span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* 9. CONFIANCE */}
+      <TrustSection counts={counts} />
 
-      {/* How it works */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-12 text-center">
-          <h2 className="font-display text-3xl font-bold text-gray-900 lg:text-4xl">Comment ça marche</h2>
-          <p className="mt-3 text-muted-foreground">Trois parcours simples, une seule plateforme.</p>
-        </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {JOURNEYS.map((j) => (
-            <div key={j.key} className="rounded-2xl border border-gray-100 bg-white p-7 shadow-sm">
-              <div className="mb-5 flex items-center gap-3">
-                <span className={`flex h-11 w-11 items-center justify-center rounded-xl ${j.iconClass}`}><j.icon size={22} /></span>
-                <h3 className="font-display text-lg font-semibold text-gray-900">{j.title}</h3>
-              </div>
-              <ol className="space-y-3">
-                {j.steps.map((s, i) => (
-                  <li key={s} className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-askool-blue text-xs font-bold text-white">{i + 1}</span>
-                    <span className="text-sm text-gray-700">{s}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* 10. ACTUALITÉS ET CONSEILS */}
+      <ResourcesSection />
 
-      {/* Featured educators */}
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-end justify-between">
-          <div>
-            <h2 className="font-display text-3xl font-bold text-gray-900">Éducateurs en vedette</h2>
-            <p className="mt-2 text-muted-foreground">Des talents vérifiés, prêts à vous accompagner.</p>
-          </div>
-          <Button data-testid="see-all-educators" variant="ghost" onClick={() => navigate("/educateurs")} className="hidden text-askool-blue sm:flex">
-            Tout voir <ArrowRight size={16} />
-          </Button>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {educators.map((e) => <EducatorCard key={e.user_id} edu={e} />)}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="overflow-hidden rounded-3xl bg-askool-blue px-8 py-14 text-center shadow-xl">
-          <h2 className="font-display text-3xl font-bold text-white lg:text-4xl">Prêt à rejoindre ASKOOL ?</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-blue-100">Créez votre compte gratuitement et commencez en quelques secondes.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button data-testid="cta-register" onClick={() => navigate("/inscription")}
-              className="rounded-xl bg-askool-orange px-7 py-6 text-base font-semibold text-black hover:bg-askool-orangehover">Créer un compte</Button>
-            <Button data-testid="cta-schools" onClick={() => navigate("/pour-les-ecoles")}
-              variant="outline" className="rounded-xl border-2 border-white bg-transparent px-7 py-6 text-base text-white hover:bg-white/10">Je suis une école</Button>
-          </div>
-        </div>
-      </section>
+      {/* 11. CTA FINAL */}
+      <FinalCta />
     </PublicLayout>
   );
 }

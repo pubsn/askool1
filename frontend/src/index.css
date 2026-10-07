@@ -46,7 +46,12 @@ body {
 
 h1, h2, h3, h4, h5, h6, .font-display {
   font-family: var(--askool-font-display);
-  color: var(--askool-ink);
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--askool-ink);
+  }
 }
 
 label, .label {

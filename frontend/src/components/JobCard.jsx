@@ -14,16 +14,17 @@ export default function JobCard({ job }) {
         <span className="text-xs text-muted-foreground">{job.school_name}</span>
       </div>
       <h3 className="font-display text-lg font-semibold text-gray-900">{job.title}</h3>
-      <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-        <span className="flex items-center gap-1"><Briefcase size={14} /> {job.subject}</span>
-        <span className="flex items-center gap-1"><GraduationCap size={14} /> {job.level}</span>
+      <div className="mt-3 flex flex-wrap gap-3 text-sm text-askool-text">
+        <span className="flex items-center gap-1"><Briefcase size={14} /> {job.subject || "Toutes matières"}</span>
+        <span className="flex items-center gap-1"><GraduationCap size={14} /> {job.level || "Tous niveaux"}</span>
         <span className="flex items-center gap-1"><MapPin size={14} /> {job.region}</span>
+        {job.created_at && <span className="flex items-center gap-1"><Clock size={14} /> {new Date(job.created_at).toLocaleDateString("fr-FR")}</span>}
       </div>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {(job.skills || []).slice(0, 3).map((s) => <Tag key={s}>{s}</Tag>)}
       </div>
-      <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
-        <div className="text-sm font-semibold text-gray-900">{job.salary}</div>
+      <div className="mt-4 flex items-center justify-between border-t border-askool-border pt-4">
+        <div className="text-sm font-semibold text-askool-ink">{job.salary || "Salaire à discuter"}</div>
         <Button data-testid={`view-job-${job.offer_id}`} variant="outline"
           onClick={() => navigate(`/emplois/${job.offer_id}`)}
           className="rounded-xl border-askool-blue text-askool-blue hover:bg-askool-bluelight">

@@ -1,172 +1,178 @@
 {
-  "design_philosophy": {
-    "identity": "Warm & Human, modern, and technological. The platform must avoid looking cold, sterile, or overly institutional.",
-    "core_attributes": [
-      "Trust",
-      "Professionalism",
-      "Simplicity",
-      "Accessibility",
-      "Proximity",
-      "Security"
-    ],
-    "positioning": "La plateforme qui connecte les talents éducatifs aux écoles et aux apprenants.",
-    "hero_title": "Trouvez le bon éducateur. Trouvez la bonne opportunité.",
-    "market": "Senegal"
-  },
-  "colors": {
-    "primary": {
-      "blue": "#2a4898",
-      "blue_hover": "#203a7a",
-      "blue_light": "#eef2fb"
+  "project_name": "ASKOOL Frontend Refactoring - Homepage & Registration",
+  "archetype": "Swiss & High-Contrast Educational Platform",
+  "user_choices_lock": {
+    "palette": {
+      "primary_blue": "#203c89",
+      "dark_blue_hover": "#16295e",
+      "light_blue_bg": "#eef2fc",
+      "pale_blue_border": "#dde4f4",
+      "background": "#f4f6fc",
+      "primary_orange": "#ee731f",
+      "dark_orange_hover": "#d45f11",
+      "light_orange_bg": "#fdefe3",
+      "surface_white": "#ffffff",
+      "text_title_black": "#000000",
+      "text_secondary": "#4d5670",
+      "text_muted": "#7b849c",
+      "status_green": "#10b981",
+      "status_red": "#ef4444"
     },
-    "accent": {
-      "orange": "#F8BF0E",
-      "orange_hover": "#e0ab0c",
-      "orange_light": "#fff9e6"
+    "forbidden_colors": ["purple", "pink", "teal", "yellow", "cyan", "gradient backgrounds"],
+    "typography": {
+      "headings_and_numbers": "Poppins, sans-serif",
+      "body_and_ui": "Inter, sans-serif",
+      "font_sizes": {
+        "page_title": "34px",
+        "section_title": "17px",
+        "body_text": "15px",
+        "labels_and_meta": "14px"
+      },
+      "font_weights": ["400", "500", "600", "700"]
     },
-    "background": {
-      "default": "#FDFBF7",
-      "surface": "#FFFFFF",
-      "subtle": "#F3F4F6"
-    },
-    "text": {
-      "primary": "#111827",
-      "secondary": "#4B5563",
-      "muted": "#9CA3AF"
-    },
-    "status": {
-      "success": "#10B981",
-      "warning": "#F59E0B",
-      "error": "#EF4444"
-    },
-    "rules": [
-      "Use Blue (#2a4898) for primary trust actions, headers, and major structural elements.",
-      "Use Orange (#F8BF0E) for high-energy accents, highlights, primary conversion CTAs, and Premium/Family Pass badges.",
-      "Never use pure black or pure white for backgrounds. Always use the slightly warm #FDFBF7 for the main app background to reinforce the 'Warm & Human' feel.",
-      "Ensure sufficient contrast for accessibility (WCAG AA). If placing white text on the orange button, check contrast or use a very dark blue/black text on the orange CTA for readability."
-    ]
+    "visual_rules": {
+      "card_style": "bg-white border border-[#dde4f4] rounded-xl shadow-sm hover:shadow-md transition-all duration-200",
+      "icon_style": "Default: Blue icon on #eef2fc background. Action required: Orange icon on #fdefe3 background.",
+      "button_rules": "Only ONE primary orange (#ee731f) CTA per viewport/section focal point. Secondary CTAs must be white with blue border/text or solid blue (#203c89)."
+    }
   },
   "typography": {
     "headings": {
-      "family": "Poppins",
-      "weights": ["600", "700", "800"],
-      "usage": "All titles, H1-H6, hero texts, and card titles.",
-      "tracking": "tracking-tight"
+      "font_family": "Poppins",
+      "hero_title": "text-3xl sm:text-4xl lg:text-[34px] font-bold text-[#000000] leading-tight tracking-tight",
+      "section_title": "text-[17px] font-semibold text-[#000000] tracking-normal uppercase text-opacity-90",
+      "card_title": "text-[16px] font-semibold text-[#203c89]"
     },
     "body": {
-      "family": "Figtree, sans-serif",
-      "weights": ["400", "500", "600"],
-      "usage": "Highly legible for all body text, paragraphs, labels, and UI text.",
-      "tracking": "tracking-normal"
-    },
-    "scales": {
-      "h1": "text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight",
-      "h2": "text-2xl sm:text-3xl lg:text-4xl font-semibold leading-snug",
-      "h3": "text-xl sm:text-2xl font-semibold",
-      "body_large": "text-lg",
-      "body_base": "text-base",
-      "small": "text-sm",
-      "tiny": "text-xs uppercase tracking-[0.1em]"
-    },
-    "rules": [
-      "Do NOT use Inter for headings.",
-      "Use 'Poppins' exclusively for large display text and section titles.",
-      "Ensure all text has minimum 4.5:1 contrast ratio against its background."
-    ]
-  },
-  "spacing_and_layout": {
-    "general": {
-      "philosophy": "Generous Spacing (p-6, p-8) to ensure the platform feels accessible, breathable, and simple.",
-      "card_padding": "p-6 md:p-8",
-      "section_spacing": "py-16 md:py-24 lg:py-32"
-    },
-    "landing_page": {
-      "grid_mode": "The 'Tetris' Grid (Asymmetrical and engaging) or 'Swiss' inspired clean sections with overlapping elements.",
-      "hero_composition": "Massive H1 (Poppins), engaging Subtitle, overlapping embedded search bar with filters (Subject, Level, Location, Type) floating over or right below the text, alongside warm human photography.",
-      "features_section": "Bento grid with generous white space and subtle orange/blue accent borders."
-    },
-    "dashboards": {
-      "grid_mode": "High Density Grid for functionality, but retaining soft radii.",
-      "navigation": "Responsive: Mobile-first bottom navigation + hamburger menu for secondary items. Side navigation for Desktop.",
-      "content_area": "Max-w-7xl centered, p-4 sm:p-6 lg:p-8.",
-      "alignment": "Optical alignment over geometrical. Left-align dense data, tables, and forms."
-    },
-    "radii": {
-      "cards": "rounded-2xl",
-      "buttons": "rounded-full or rounded-xl (slightly rounded as requested)",
-      "inputs": "rounded-lg"
+      "font_family": "Inter",
+      "hero_subtitle": "text-[15px] sm:text-[16px] text-[#4d5670] leading-relaxed max-w-3xl",
+      "regular": "text-[15px] text-[#4d5670] leading-normal",
+      "small": "text-[14px] text-[#7b849c]"
     }
   },
-  "components": {
-    "buttons": {
-      "primary": "bg-[#2a4898] text-white hover:bg-[#203a7a] transition-colors rounded-xl px-6 py-3 font-medium",
-      "accent": "bg-[#F8BF0E] text-[#111827] hover:bg-[#e0ab0c] transition-colors rounded-xl px-6 py-3 font-semibold",
-      "outline": "border-2 border-[#2a4898] text-[#2a4898] hover:bg-[#eef2fb] rounded-xl px-6 py-3 font-medium"
+  "layout_and_sections": {
+    "ux_flow": "Inspired by Alexia.fr UX pattern: HEADER -> HERO SEARCH -> 4 QUICK ACCESSS -> CATEGORIES (EXPLORER) -> USER ROLES (VOUS ÊTES) -> HOW IT WORKS -> REAL DATA SHOWCASES (EDUCATORS / JOBS / SCHOOLS) -> TRUST & PROOF -> EDITORIAL ARTICLES/GUIDES -> FINAL CTA -> FOOTER",
+    "1_header": {
+      "component": "src/components/layout/PublicLayout.jsx",
+      "description": "Uncluttered header featuring Logo ASKOOL, primary links (Accueil, Explorer, Comment ça marche), secondary drawer 'Menu', and auth buttons (Connexion, Créer un compte).",
+      "menu_drawer_items": ["Écoles", "Éducateurs", "Offres d'emploi", "Cours particuliers", "Formations", "Actualités", "Conseils", "À propos", "Aide/Contact"]
     },
-    "cards": {
-      "style": "bg-white border border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-2xl p-6",
-      "educator_card": "Includes educator photo, verified badge, rating (stars), subjects/levels tags, and 'Book' CTA."
-    },
-    "inputs": {
-      "style": "bg-gray-50 border border-gray-200 focus:border-[#2a4898] focus:ring-2 focus:ring-[#2a4898]/20 rounded-lg p-3 w-full transition-all"
-    },
-    "badges": {
-      "premium": "bg-gradient-to-r from-[#F8BF0E] to-[#e0ab0c] text-black text-xs font-bold px-2 py-1 rounded-md uppercase",
-      "verified": "bg-[#10B981]/10 text-[#10B981] flex items-center gap-1 text-xs px-2 py-1 rounded-md",
-      "match_score": "bg-[#2a4898]/10 text-[#2a4898] font-bold px-3 py-1 rounded-full text-sm (e.g., '92% Compatible')"
-    },
-    "icons": {
-      "library": "lucide-react",
-      "style": "Simple, clean line icons, primarily in the #2a4898 (blue) or #4B5563 (slate) color."
-    },
-    "testing": {
-      "rule": "All interactive and key informational elements MUST include a data-testid attribute (e.g., data-testid='hero-search-button')."
-    }
-  },
-  "motion": {
-    "philosophy": "Discreet micro-interactions and light animations.",
-    "hover_states": "-translate-y-1 transform transition-all duration-300 ease-out on cards. Scale 1.02 on primary buttons.",
-    "page_transitions": "Subtle fade-in (opacity 0 to 1) for dashboard views.",
-    "libraries": "framer-motion for React components."
-  },
-  "media": {
-    "image_urls": {
-      "hero_main": {
-        "url": "https://images.unsplash.com/photo-1567057419565-4349c49d8a04?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHwzfHxhZnJpY2FuJTIwc3R1ZGVudHMlMjBzbWlsaW5nfGVufDB8fHx8MTc4ODAwNjM2MHww&ixlib=rb-4.1.0&q=85",
-        "description": "Group of joyful African children. Perfect for the hero section or 'Parents/Learners' section to evoke warmth and accessibility."
-      },
-      "educator_profile_1": {
-        "url": "https://images.unsplash.com/photo-1604933762021-54a5858c9832?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwyfHxhZnJpY2FuJTIwcHJvZmVzc2lvbmFsJTIwd29ya2luZyUyMGxhcHRvcHxlbnwwfHx8fDE3ODgwMDYzNjR8MA&ixlib=rb-4.1.0&q=85",
-        "description": "African woman working on laptop. Excellent for representing an adult learner, a private tutor, or school administrator."
-      },
-      "educator_profile_2": {
-        "url": "https://images.unsplash.com/photo-1744809482817-9a9d4fc280af?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxhZnJpY2FuJTIwdGVhY2hlciUyMGNsYXNzcm9vbXxlbnwwfHx8fDE3ODgwMDYzNTZ8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Teacher actively instructing in front of a class. Perfect for the 'Schools' journey or 'CV Library' marketing."
-      },
-      "students_warm": {
-        "url": "https://images.unsplash.com/photo-1548102245-c79dbcfa9f92?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA3MDR8MHwxfHNlYXJjaHw0fHxhZnJpY2FuJTIwc3R1ZGVudHMlMjBzbWlsaW5nfGVufDB8fHx8MTc4ODAwNjM2MHww&ixlib=rb-4.1.0&q=85",
-        "description": "Two African boys smiling. Represents the Family Pass, private tutoring success, and proximity."
+    "2_hero": {
+      "title": "Trouvez ce qu'il vous faut pour votre projet éducatif.",
+      "subtitle": "École, éducateur, emploi, cours particuliers ou formation : trouvez rapidement ce dont vous avez besoin sur ASKOOL.",
+      "search_bar": {
+        "tabs": ["Toutes", "École", "Éducateur", "Offre d'emploi", "Cours", "Formation"],
+        "fields": ["Type", "Matière / Spécialité", "Niveau", "Localisation"],
+        "quick_access_cards": [
+          {"label": "Je cherche une école", "type": "school", "icon": "GraduationCap"},
+          {"label": "Je cherche un éducateur", "type": "educator", "icon": "UserCheck"},
+          {"label": "Je cherche un emploi", "type": "job", "icon": "Briefcase"},
+          {"label": "Je cherche un cours", "type": "tutoring", "icon": "BookOpen"}
+        ]
       }
     },
-    "style": "Photos must depict the Senegalese/African context. Focus on warmth, smiles, and professional/educational settings. Avoid clinical or overly corporate imagery."
+    "3_explorer_askool": {
+      "title": "Explorez ASKOOL",
+      "categories": [
+        {"name": "Écoles & Établissements", "count_label": "Écoles partenaires", "icon": "Building2", "link": "/schools"},
+        {"name": "Éducateurs & Enseignants", "count_label": "Profils vérifiés", "icon": "Users", "link": "/educators"},
+        {"name": "Opportunités & Emplois", "count_label": "Offres actives", "icon": "Briefcase", "link": "/jobs"},
+        {"name": "Cours particuliers", "count_label": "Accompagnement dédié", "icon": "BookOpen", "link": "/educators?mode=tutoring"},
+        {"name": "Formations", "count_label": "Développement pro", "icon": "Award", "link": "/schools?type=formation"}
+      ]
+    },
+    "4_vous_etes": {
+      "title": "ASKOOL s'adapte à votre besoin",
+      "roles": [
+        {"role": "ÉTABLISSEMENT", "tagline": "Recrutez des éducateurs qualifiés et valorisez vos offres d'emploi.", "cta": "Commencer", "link": "/register?role=school"},
+        {"role": "ÉDUCATEUR", "tagline": "Développez votre activité, trouvez des postes ou des cours particuliers.", "cta": "Commencer", "link": "/register?role=educator"},
+        {"role": "PARENT", "tagline": "Trouvez le bon établissement ou un soutien scolaire adapté pour vos enfants.", "cta": "Commencer", "link": "/register?role=parent"},
+        {"role": "APPRENANT", "tagline": "Découvrez des formations, des écoles et des profils d'enseignants passionnés.", "cta": "Commencer", "link": "/register?role=learner"}
+      ]
+    },
+    "5_comment_ca_marche": {
+      "title": "Comment ça marche ?",
+      "steps": [
+        {"step": "01", "title": "Créez votre profil", "desc": "Inscrivez-vous en 1 minute selon votre rôle (Établissement, Éducateur, Parent ou Apprenant)."},
+        {"step": "02", "title": "Recherchez ou publiez", "desc": "Explorez les annonces, filtrez selon vos critères ou publiez vos besoins en toute simplicité."},
+        {"step": "03", "title": "Échangez et avancez", "desc": "Prenez contact directement via la messagerie sécurisée ASKOOL et concrétisez votre projet."}
+      ]
+    },
+    "6_educateurs": {
+      "title": "Éducateurs et enseignants disponibles",
+      "subtitle": "Des professionnels de l'éducation vérifiés prêts à intervenir",
+      "data_source": "API GET /educators",
+      "card_fields": ["Photo", "Nom", "Spécialité", "Niveau", "Localisation", "Années d'expérience", "Badge vérifié", "Bouton Voir le profil"]
+    },
+    "7_offres_emploi": {
+      "title": "Offres d'emploi récentes",
+      "subtitle": "Les dernières opportunités publiées par nos établissements partenaires",
+      "data_source": "API GET /jobs",
+      "card_fields": ["Titre de l'offre", "Établissement", "Matière", "Niveau", "Localisation", "Type de contrat", "Date de publication", "Bouton Voir l'offre"]
+    },
+    "8_etablissements": {
+      "title": "Établissements partenaires",
+      "subtitle": "Découvrez les écoles et centres de formation inscrits sur la plateforme",
+      "data_source": "API GET /schools",
+      "card_fields": ["Logo/Photo", "Nom", "Type d'établissement", "Localisation", "Niveaux d'enseignement", "Badge vérifié", "Bouton Voir l'établissement"]
+    },
+    "9_confiance": {
+      "title": "Une plateforme de confiance pour l'éducation",
+      "counters": [
+        {"label": "Éducateurs qualifiés", "key": "educators_count"},
+        {"label": "Établissements membres", "key": "schools_count"},
+        {"label": "Offres d'emploi & opportunités", "key": "jobs_count"}
+      ],
+      "guarantees": [
+        {"title": "Profils vérifiés", "desc": "Chaque profil éducateur et établissement fait l'objet d'une validation rigoureuse.", "icon": "ShieldCheck"},
+        {"title": "Messagerie intégrée", "desc": "Échangez en direct avec vos interlocuteurs en toute sérénité.", "icon": "MessageSquare"},
+        {"title": "Informations structurées", "desc": "Des données claires et détaillées pour faciliter vos prises de décision.", "icon": "FileCheck"}
+      ]
+    },
+    "10_actualites_conseils": {
+      "title": "Actualités & Conseils éducatifs",
+      "subtitle": "Ressources et guides pratiques pour vous accompagner",
+      "editorial_cards": [
+        {"title": "Comment bien choisir son établissement scolaire ?", "category": "Guide Parents", "excerpt": "Découvrez les critères essentiels pour évaluer une école et trouver l'environnement idéal.", "link": "/faq"},
+        {"title": "Guide du recrutement pour les établissements", "category": "Espace Écoles", "excerpt": "Optimisez la publication de vos offres et attirez les meilleurs candidats éducateurs.", "link": "/for-schools"},
+        {"title": "Développer son activité de cours particuliers", "category": "Conseils Éducateurs", "excerpt": "Nos recommandations pour valoriser votre profil et trouver de nouveaux élèves.", "link": "/how-it-works"}
+      ]
+    },
+    "11_cta_final": {
+      "title": "Prêt à utiliser ASKOOL ?",
+      "subtitle": "Rejoignez une plateforme pensée pour faciliter les échanges entre établissements, éducateurs, parents et apprenants.",
+      "primary_btn": {"label": "Créer mon compte", "link": "/register", "color": "#ee731f"},
+      "secondary_btn": {"label": "Explorer ASKOOL", "link": "/schools", "color": "#203c89"}
+    },
+    "12_register_page": {
+      "component": "src/pages/auth/Register.jsx",
+      "wizard_steps": [
+        {"step": 1, "title": "Quel est votre profil ?", "options": ["Établissement", "Éducateur", "Parent", "Apprenant"]},
+        {"step": 2, "title": "Vos informations personnelles", "fields": ["Prénom & Nom", "Email", "Téléphone (optionnel)"]},
+        {"step": 3, "title": "Création du mot de passe", "fields": ["Mot de passe", "Confirmation du mot de passe", "Conditions d'utilisation"]}
+      ],
+      "features": ["Barre de progression 'Étape X sur 3'", "Boutons Précédent / Suivant", "Conservation intégrale de l'API /auth/register et Google Auth existant"]
+    }
+  },
+  "image_urls": {
+    "classroom_students": "https://images.unsplash.com/photo-1509062522246-3755977927d7?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "teacher_in_class": "https://images.unsplash.com/photo-1577896851231-70ef18881754?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "students_working": "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "modern_school_building": "https://images.unsplash.com/photo-1786013522160-00ac876da3ab?crop=entropy&cs=srgb&fm=jpg&q=85",
+    "school_exterior_twilight": "https://images.unsplash.com/photo-1758611228434-7b5b697abd0a?crop=entropy&cs=srgb&fm=jpg&q=85"
   },
   "instructions_to_main_agent": [
-    "Build a robust layout using pure HTML/Tailwind for marketing pages and Shadcn components for complex dashboard logic.",
-    "Implement a theme provider to ensure background is #FDFBF7 by default.",
-    "Install Google Fonts 'Poppins' and 'Figtree'. Ensure Poppins is used exclusively for H1-H6.",
-    "Create the embedded search component immediately below the Hero Text. It must include Subject, Level, Location, and Service Type dropdowns.",
-    "For the dashboards, ensure the navigation shifts from a side-nav (desktop) to a bottom-nav + hamburger menu (mobile).",
-    "Use lucide-react for all iconography to maintain simple, modern visuals.",
-    "Ensure the match compatibility score ('92% compatible') is visually prominent on tutor profile cards.",
-    "Add 'data-testid' to ALL buttons, inputs, links, and forms."
+    "Strictly follow the palette rules: Primary Blue #203c89, Dark Blue #16295e, Light Blue #eef2fc, Pale Blue Border #dde4f4, Background #f4f6fc, Primary Action Orange #ee731f, Dark Orange #d45f11, Light Orange #fdefe3, Surface White #ffffff, Black titles #000000, Secondary #4d5670, Muted #7b849c.",
+    "Do NOT add forbidden colors such as purple, teal, pink, bright green, or full-screen gradients.",
+    "Ensure Poppins font is loaded for headings and Inter for body text.",
+    "Use data-testid attributes on all interactive elements (buttons, inputs, links, tabs, wizard steps).",
+    "Maintain all existing backend endpoints and functionality intact without introducing mock data when real data exists.",
+    "Ensure total mobile responsiveness with sticky search access and collapsible secondary menu in PublicLayout header."
   ],
-  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": {
-    "avoid_slop": "Do not make generic centered layouts. Use asymmetrical grids (Bento) for marketing. Create depth through layered design elements and subtle shadows.",
-    "spacing": "Use 2x more spacing than feels comfortable. Cramped designs look cheap.",
-    "motion": "Every interaction needs micro-animations (hover states, subtle entrance fades). Static = dead.",
-    "component_reuse": "Prioritize reusing Shadcn components from src/components/ui.",
-    "toasts": "Use 'sonner' for toasts.",
-    "testing": "All interactive and key informational elements MUST include a data-testid attribute to facilitate robust automated testing.",
-    "css_rule": "NEVER apply 'transition: all' globally. NEVER center align the main App container globally."
-  }
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "Do NOT use transparent background in sticky header - use solid white (#ffffff) or white with subtle shadow and border #dde4f4.",
+    "All cards must have white background (#ffffff), pale blue border (#dde4f4), rounded-xl corners, and subtle hover transition.",
+    "Never use AI emoji characters for icons; use Lucide React icons.",
+    "Keep standard WCAG AA contrast for text over white and blue surfaces."
+  ]
 }

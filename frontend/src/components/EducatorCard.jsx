@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Briefcase, Star } from "lucide-react";
+import { MapPin, Briefcase, Star, GraduationCap } from "lucide-react";
 import { Stars, VerifiedBadge, Tag, PremiumBadge, MatchBadge } from "@/components/common";
 import { Button } from "@/components/ui/button";
 
@@ -19,9 +19,15 @@ export default function EducatorCard({ edu }) {
             {edu.is_premium && <PremiumBadge />}
           </div>
           <p className="truncate text-sm text-askool-blue">{edu.profession}</p>
-          <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="mt-1 flex items-center gap-1 text-xs text-askool-subtle">
             <MapPin size={12} /> {edu.location || edu.region}
           </div>
+          {(edu.levels?.length > 0 || edu.experience_years > 0) && (
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-askool-subtle">
+              {edu.levels?.length > 0 && <span className="flex items-center gap-1"><GraduationCap size={12} /> {edu.levels.slice(0, 2).join(" · ")}</span>}
+              {edu.experience_years > 0 && <span className="flex items-center gap-1"><Briefcase size={12} /> {edu.experience_years} ans d'expérience</span>}
+            </div>
+          )}
           <div className="mt-1.5 flex items-center gap-2">
             <Stars value={edu.rating} size={14} />
             <span className="text-xs text-muted-foreground">{edu.rating || 0} ({edu.reviews_count || 0})</span>
