@@ -20,6 +20,12 @@
 
   --askool-blue-hover: var(--askool-blue-dark);
   --askool-orange-hover: var(--askool-orange-dark);
+  --askool-cream: #faf7f1;
+  --askool-cream-deep: #f3ede2;
+  --askool-sand: #e7e1d6;
+  --askool-green: #1f6f5c;
+  --askool-green-dark: #17594a;
+  --askool-green-light: #e8f3ef;
 
   --askool-font-display: 'Poppins', system-ui, sans-serif;
   --askool-font-sans: 'Inter', system-ui, sans-serif;

@@ -5,6 +5,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthCallback from "@/components/AuthCallback";
 
 import Landing from "@/pages/Landing";
+import Explore from "@/pages/Explore";
 import HowItWorks from "@/pages/HowItWorks";
 import Pricing from "@/pages/Pricing";
 import ForSchools from "@/pages/ForSchools";
@@ -57,6 +58,7 @@ function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
+      <Route path="/explorer" element={<Explore />} />
       <Route path="/comment-ca-marche" element={<HowItWorks />} />
       <Route path="/tarifs" element={<Pricing />} />
       <Route path="/pour-les-ecoles" element={<ForSchools />} />

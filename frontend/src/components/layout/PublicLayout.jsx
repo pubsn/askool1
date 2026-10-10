@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 
 const PRIMARY = [
   { label: "Accueil", to: "/" },
-  { label: "Explorer", to: "/#explorer" },
+  { label: "Explorer", to: "/explorer" },
   { label: "Comment ça marche", to: "/comment-ca-marche" },
 ];
 
@@ -17,8 +17,7 @@ const SECONDARY = [
   { label: "Cours particuliers", to: "/educateurs?service_type=Cours+particuliers", icon: BookOpen, d: "Soutien scolaire et cours à domicile" },
   { label: "Formations", to: "/ecoles?type=formation", icon: Award, d: "Centres et formations professionnelles" },
   { label: "Actualités", to: "/#actualites", icon: Newspaper, d: "Les publications et guides ASKOOL" },
-  { label: "Conseils", to: "/#actualites", icon: Lightbulb, d: "Bonnes pratiques parents et éducateurs" },
-  { label: "À propos", to: "/a-propos", icon: Info, d: "La mission et l'équipe ASKOOL" },
+  { label: "Conseils", to: "/#actualites", icon: Lightbulb, d: "Bonnes pratiques parents et éducateurs" },  { label: "À propos", to: "/a-propos", icon: Info, d: "La mission et l'équipe ASKOOL" },
   { label: "Aide / Contact", to: "/contact", icon: LifeBuoy, d: "Questions, support et assistance" },
 ];
 
@@ -83,15 +82,15 @@ export default function PublicLayout({ children }) {
 
         {/* Desktop secondary menu panel */}
         {menu && (
-          <div data-testid="nav-menu-panel" className="hidden border-t border-askool-border bg-white shadow-card lg:block">
-            <div className="mx-auto grid max-w-7xl gap-2 px-8 py-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div data-testid="nav-menu-panel" className="hidden border-t border-askool-border bg-askool-bluedark shadow-[0_24px_48px_-24px_rgba(22,41,94,0.5)] lg:block">
+            <div className="mx-auto grid max-w-7xl gap-2 px-8 py-7 sm:grid-cols-2 lg:grid-cols-3">
               {SECONDARY.map((s) => (
                 <Link key={s.label} to={s.to} data-testid={`menu-${s.label}`}
-                  className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-askool-bluelight">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-askool-bluelight text-askool-blue group-hover:bg-white"><s.icon size={18} /></span>
+                  className="group flex items-start gap-3 rounded-xl border border-white/10 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/10">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white transition-colors group-hover:bg-askool-orange"><s.icon size={18} /></span>
                   <span>
-                    <span className="block text-sm font-semibold text-askool-ink">{s.label}</span>
-                    <span className="block text-xs text-askool-subtle">{s.d}</span>
+                    <span className="block text-sm font-semibold text-white">{s.label}</span>
+                    <span className="block text-xs text-white/65">{s.d}</span>
                   </span>
                 </Link>
               ))}

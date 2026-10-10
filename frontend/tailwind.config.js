@@ -9,6 +9,25 @@ const ORANGE_DARK = '#d45f11';
 const ORANGE_LIGHT = '#fdefe3';
 const TEXT_SECONDARY = '#4d5670';
 const TEXT_MUTED = '#7b849c';
+const CREAM = '#faf7f1';
+const CREAM_DEEP = '#f3ede2';
+const GREEN = '#1f6f5c';
+const GREEN_DARK = '#17594a';
+const GREEN_LIGHT = '#e8f3ef';
+const SAND = '#e7e1d6';
+
+const greenScale = {
+  50: GREEN_LIGHT,
+  100: GREEN_LIGHT,
+  200: GREEN_LIGHT,
+  300: GREEN,
+  400: GREEN,
+  500: GREEN,
+  600: GREEN,
+  700: GREEN_DARK,
+  800: GREEN_DARK,
+  900: GREEN_DARK,
+};
 
 // Palette-only grays: any gray/slate utility resolves to an ASKOOL token.
 const grayScale = {
@@ -78,7 +97,12 @@ module.exports = {
           orange: ORANGE,
           orangehover: ORANGE_DARK,
           orangelight: ORANGE_LIGHT,
-          cream: SURFACE,
+          cream: CREAM,
+          creamdeep: CREAM_DEEP,
+          sand: SAND,
+          green: GREEN,
+          greenhover: GREEN_DARK,
+          greenlight: GREEN_LIGHT,
           ink: '#000000',
           text: TEXT_SECONDARY,
           subtle: TEXT_MUTED,
@@ -96,6 +120,8 @@ module.exports = {
         sky: blueScale,
         cyan: blueScale,
         teal: blueScale,
+        green: greenScale,
+        emerald: greenScale,
         orange: orangeScale,
         amber: orangeScale,
         yellow: orangeScale,
