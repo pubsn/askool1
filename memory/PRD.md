@@ -142,6 +142,15 @@ Auth Google + email, "tout en surface", matching par règles, emails réels via 
 - Correctif CSS : la couleur des titres passe dans `@layer base` pour ne plus écraser les utilitaires Tailwind (textes blancs sur fonds foncés)
 - Aucune modification backend / API / DB / auth / routes dans cette itération
 
+## Implemented (2026-06 — Refonte frontend premium) — vérifié iteration_14 (100 % frontend)
+- **Tokens étendus** : couleurs secondaires crème `#faf7f1`, crème profond `#f3ede2`, sable `#e7e1d6`, vert discret `#1f6f5c` (+ `#17594a` / `#e8f3ef`) dans `tailwind.config.js` et `index.css` ; `green`/`emerald` remappés sur le vert ASKOOL ; orange réservé aux actions principales
+- **Hero immersif** (`Landing.jsx`) : photographie éducation (Unsplash, centralisée dans `lib/images.js`), overlays en **style inline** (les opacités Tailwind type `/92` sur couleurs custom ne se généraient pas), titre/sous-titre centrés, module de recherche central + 4 accès rapides sur verre dépoli
+- **Homepage** : titres de sections centrés et réduits via `home/SectionHeading.jsx`, arrière-plans alternés (blanc / crème / surface / bleu foncé), cartes illustrées (Explorer), diagramme 3 étapes avec ligne de liaison, animations au défilement via `home/Reveal.jsx` (respecte `prefers-reduced-motion`)
+- **Nouvelle page `/explorer`** (`pages/Explore.jsx`, route ajoutée dans `App.js`) : hero + recherche, 5 catégories illustrées, blocs écoles / éducateurs / offres / formations alimentés par les API existantes, CTA final
+- **Page `/comment-ca-marche` refondue** : parcours commun en 3 étapes + onglets par profil (Établissement, Éducateur, Parent, Apprenant) avec 4 étapes détaillées, visuel et CTA vers `/inscription?role=`, section garanties
+- **Header** : « Explorer » pointe vers `/explorer` ; panneau Menu desktop sur fond bleu foncé contrasté avec survols visibles ; drawer mobile inchangé
+- Aucune modification backend / API / DB / auth / logique métier
+
 ## Backlog (P1/P2)
 - P1: Upload réel de fichiers (photos/CV/diplômes) via object storage
 - P1: Activation paiement Mobile Money (Orange Money/Wave) + confirmation avant premium
